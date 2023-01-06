@@ -54,6 +54,8 @@ static struct res_entry resfiles[ASSET_KEY_COUNT] = {
 	[DEBUG_MESH_CYLINDER] = { MESH_INTERNAL, {} },
 	[DEBUG_MESH_CUBE] = { MESH_INTERNAL, {} },
 	[MESH_QUAD] = { MESH_INTERNAL, {} },
+	[MESH_ROCK_TEST] = { MESH_OBJ, .file = "res/rock.obj" },
+	[SHADER_TEST]  = { SHADER, .vert = "res/proj.vert", .frag = "res/test.frag", },
 	[SHADER_SOLID]  = { SHADER, .vert = "res/proj.vert", .frag = "res/solid.frag", },
 
 	//[MESH_TEST]  = { MESH_OBJ, .file = "res/test.obj", },

@@ -339,7 +339,7 @@ sys_render_exec(void)
 	render_pass(g_state->sun, 1);
 
 	if (g_state->debug) {
-		debug_texture((vec2){200, 200}, &g_state->depth);
+//		debug_texture((vec2){200, 200}, &g_state->depth);
 	}
 
 	/* Rebind the default framebuffer */

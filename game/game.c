@@ -36,10 +36,9 @@ game_init(struct game_memory *game_memory)
 	camera_set_znear(&g_state->cam, 0.1);
 	camera_set(&g_state->cam, (vec3){-1., 4.06, 8.222}, (quaternion){ {0.018959, 0.429833, 0.009028}, -0.902673});
 	camera_look_at(&g_state->cam, (vec3){0.0, 0., 0.}, (vec3){0., 1., 0.});
-	g_state->flycam_speed = 1;
+	g_state->player_cam = g_state->cam;
 
 	g_state->state = GAME_INIT;
-	g_state->next_state = GAME_MENU;
 }
 
 void
@@ -48,31 +47,6 @@ game_fini(struct game_memory *memory)
 	struct game_asset *game_asset = memory->asset.base;
 	game_asset_fini(game_asset);
 }
-
-#if 0
-static void
-game_set_player_movement(void)
-{
-	int dir_forw = 0, dir_left = 0;
-
-	if (key_pressed(input, 'W'))
-		dir_forw += 1;
-	if (key_pressed(input, 'S'))
-		dir_forw -= 1;
-	if (key_pressed(input, 'A'))
-		dir_left += 1;
-	if (key_pressed(input, 'D'))
-		dir_left -= 1;
-	if (dir_forw || dir_left) {
-		vec3 forw = vec3_mult(dir_forw, (vec3){0,0,1});
-		vec3 left = vec3_mult(dir_left, (vec3){1,0,0});
-		vec3 dir = vec3_add(forw, left);
-		e->direction = vec3_normalize(dir);
-	} else {
-		e->direction = VEC3_ZERO;
-	}
-}
-#endif
 
 static void
 debug_origin_mark(void)
@@ -96,14 +70,16 @@ debug_light_mark(struct light *l)
 }
 
 static void
-flycam_move(struct input *input)
+flycam_move(void)
 {
+	struct input *input = g_input->input;
+	struct camera *cam = &g_state->fly_cam;
 	float dt = g_state->dt;
-	vec3 forw = camera_get_dir(&g_state->cam);
-	vec3 left = camera_get_left(&g_state->cam);
+	vec3 forw = camera_get_dir(cam);
+	vec3 left = camera_get_left(cam);
 	vec3 dir = { 0 };
-	int fly_forw, fly_left;
-	float dx, dy;
+	int fly_forw = 0, fly_left = 0;
+	float dx = 0, dy = 0;
 	float speed;
 
 	if (is_pressed(KEY_LEFT_SHIFT))
@@ -111,13 +87,10 @@ flycam_move(struct input *input)
 	else
 		speed = 2 * dt;
 
-	fly_forw = 0;
 	if (is_pressed('W'))
 		fly_forw += 1;
 	if (is_pressed('S'))
 		fly_forw -= 1;
-
-	fly_left = 0;
 	if (is_pressed('A'))
 		fly_left += 1;
 	if (is_pressed('D'))
@@ -129,37 +102,127 @@ flycam_move(struct input *input)
 		dir = vec3_add(forw, left);
 		dir = vec3_normalize(dir);
 		dir = vec3_mult(speed, dir);
-		camera_move(&g_state->cam, dir);
+		camera_move(cam, dir);
 	}
 
-	dx = input->xinc;
-	dy = input->yinc;
+	if (g_state->mouse_grabbed) {
+		dx = input->xinc;
+		dy = input->yinc;
+	}
 
 	if (dx || dy) {
-		camera_rotate(&g_state->cam, VEC3_AXIS_Y, -0.001 * dx);
-		left = camera_get_left(&g_state->cam);
+		camera_rotate(cam, VEC3_AXIS_Y, -0.001 * dx);
+		left = camera_get_left(cam);
 		left = vec3_normalize(left);
-		camera_rotate(&g_state->cam, left, 0.001 * dy);
+		camera_rotate(cam, left, 0.001 * dy);
 	}
 
 	/* drop camera config to stdout */
 	if (on_pressed(KEY_SPACE)) {
-		vec3 pos = g_state->cam.position;
-		quaternion rot = g_state->cam.rotation;
+		vec3 pos = cam->position;
+		quaternion rot = cam->rotation;
 
 		printf("camera_set(&game_state->cam, (vec3){%f, %f, %f}, (quaternion){ {%f, %f, %f}, %f});\n", pos.x, pos.y, pos.z, rot.v.x, rot.v.y, rot.v.z, rot.w);
 	}
 }
 
-void
-game_update(void)
+static void
+player_move(void)
+{
+	const float mouse_speed = 0.002;
+	const float player_speed = 1;
+	const int mouse_inv_y = 0;
+	struct camera *cam = &g_state->player_cam;
+	int dir_forw = 0, dir_left = 0;
+	vec3 left = camera_get_left(cam);
+	vec3 forw = vec3_cross(left, VEC3_AXIS_Y);
+	vec3 pos = g_state->player_pos;
+	vec3 dir, new;
+	float dx, dy;
+
+	if (is_pressed('W'))
+		dir_forw += 1;
+	if (is_pressed('S'))
+		dir_forw -= 1;
+	if (is_pressed('A'))
+		dir_left += 1;
+	if (is_pressed('D'))
+		dir_left -= 1;
+	if (dir_forw || dir_left) {
+		forw = vec3_mult(dir_forw, forw);
+		left = vec3_mult(dir_left, left);
+		dir = vec3_normalize(vec3_add(forw, left));
+	} else {
+		dir = VEC3_ZERO;
+	}
+
+	float dt = g_state->dt;
+	dir = vec3_mult(dt * player_speed, dir);
+	new = vec3_add(pos, dir);
+
+	dx = g_input->input->xinc;
+	dy = g_input->input->yinc;
+
+	if (dx || dy) {
+		float f = vec3_dot(VEC3_AXIS_Y, camera_get_dir(cam));
+		float u = vec3_dot(VEC3_AXIS_Y, camera_get_up(cam));
+		float a_dy = sin(mouse_speed * dy);
+		float a_max = 0.1;
+
+		if (mouse_inv_y)
+			camera_rotate(cam, VEC3_AXIS_Y,  mouse_speed * dx);
+		else
+			camera_rotate(cam, VEC3_AXIS_Y, -mouse_speed * dx);
+		left = camera_get_left(cam);
+		left = vec3_normalize(left);
+
+		/* clamp view to a_max angle */
+		if (f > 0 && (u + a_dy) < a_max) {
+			a_dy = a_max - u;
+		} else if (f < 0 && (u - a_dy) < a_max) {
+			a_dy = -(a_max - u);
+		}
+		camera_rotate(cam, left, a_dy);
+	}
+
+	for (float x = -10; x < 10; x++) {
+	for (float y = -10; y < 10; y++) {
+		vec3 s = (vec3){0.1,0.1,0.1};
+		vec3 c = (vec3){1.0,0.1,0.1};
+		vec3 p = (vec3){x, 0 , y};
+		sys_render_push_cross(p, s, c);
+	}}
+
+	g_state->player_pos = new;
+}
+
+#define VEC3_ONE (vec3){1,1,1}
+static void
+game_play(void)
+{
+	sys_render_push_cross(g_state->player_pos, VEC3_ONE, VEC3_AXIS_X);
+	if (g_state->flycam) {
+		flycam_move();
+	} else {
+		vec3 player_eye = (vec3){0.0, 0.7, 0.0};
+		player_move();
+		camera_set_position(&g_state->player_cam, vec3_add(g_state->player_pos, player_eye));
+	}
+	sys_render_push_cross(g_state->player_pos, VEC3_ONE, VEC3_AXIS_Z);
+}
+
+static void
+game_main(void)
 {
 	switch (g_state->state) {
 	case GAME_INIT: /* nothing to do */
 		g_state->next_state = GAME_MENU;
+		g_state->mouse_grabbed = 1;
+		io.show_cursor(!g_state->mouse_grabbed);
 		break;
 	case GAME_MENU:
 	case GAME_PLAY:
+		game_play();
 		break;
 	}
 	g_state->state = g_state->next_state;
@@ -176,7 +239,8 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	g_state->height = input->height;
 	g_input->input = input;
 	g_state->dt = input->time - g_input->last_input.time;
-	camera_set_ratio(&g_state->cam, (float)input->width / (float)input->height);
+	camera_set_ratio(&g_state->fly_cam, (float)input->width / (float)input->height);
+	camera_set_ratio(&g_state->player_cam, (float)input->width / (float)input->height);
 
 	memory->scrap.used = 0;
 	sys_render_init(memory_zone_init(mempush(&memory->scrap, SZ_4M), SZ_4M));
@@ -185,17 +249,39 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 		g_state->debug = !g_state->debug;
 		printf("debug %s\n", g_state->flycam ? "on":"off");
 	}
+	if (on_pressed(KEY_ESCAPE)) {
+		g_state->mouse_grabbed = !g_state->mouse_grabbed;
+		io.show_cursor(!g_state->mouse_grabbed);
+	}
 	if (on_pressed('Z')) {
 		g_state->flycam = !g_state->flycam;
 		printf("flycam %s\n", g_state->flycam ? "on":"off");
-	}
-	if (g_state->flycam) {
-		flycam_move(input);
+
+		if (g_state->flycam)
+			g_state->fly_cam = g_state->cam;
 	}
 
 	debug_origin_mark();
 	/* do update here */
-	game_update();
+	game_main();
+
+	for (float i = 0; i < 10; i++) {
+		float d = 12;
+		sys_render_push(&(struct render_entry){
+				.shader = SHADER_TEST,
+				.mesh = MESH_ROCK_TEST,
+				.scale = {1,1,1},
+				.position = {d*sin((i/5.) * 3.1415),-0.5,d*cos((i/5.) * 3.1415)},
+				.rotation = QUATERNION_IDENTITY,
+				.color = (vec3){1.0,0,0},
+			});
+	}
+
+	if (g_state->flycam)
+		g_state->cam = g_state->fly_cam;
+	else
+		g_state->cam = g_state->player_cam;
+
 	sys_render_exec();
 
 	g_input->last_input = *input;

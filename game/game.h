@@ -61,9 +61,6 @@ struct game_state {
 	int height;
 
 	struct camera cam;
-	int flycam;
-	int flycam_forward, flycam_left;
-	float flycam_speed;
 
 	enum {
 		GAME_INIT,
@@ -71,9 +68,7 @@ struct game_state {
 		GAME_PLAY,
 		GAME_PAUSE,
 	} state, next_state;
-
 	int debug;
-	int key_debug;
 	struct camera sun;
 
 	struct light light;
@@ -81,6 +76,13 @@ struct game_state {
 	unsigned int depth_fbo;
 	struct system sys_render;
 
+	vec3 player_pos;
+	struct camera player_cam;
+
+	int flycam;
+	struct camera fly_cam;
+
+	int mouse_grabbed;
 #if 0
 
 	struct camera cam;
