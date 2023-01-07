@@ -39,6 +39,8 @@ game_init(struct game_memory *game_memory)
 	g_state->player_cam = g_state->cam;
 
 	g_state->state = GAME_INIT;
+
+	g_state->gui = gui_init(malloc(gui_size()));
 }
 
 void
@@ -244,10 +246,10 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 
 	memory->scrap.used = 0;
 	sys_render_init(memory_zone_init(mempush(&memory->scrap, SZ_4M), SZ_4M));
+	gui_begin(g_state->gui);
 
 	if (on_pressed('X')) {
 		g_state->debug = !g_state->debug;
-		printf("debug %s\n", g_state->flycam ? "on":"off");
 	}
 	if (on_pressed(KEY_ESCAPE)) {
 		g_state->mouse_grabbed = !g_state->mouse_grabbed;
@@ -255,16 +257,19 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	}
 	if (on_pressed('Z')) {
 		g_state->flycam = !g_state->flycam;
-		printf("flycam %s\n", g_state->flycam ? "on":"off");
-
 		if (g_state->flycam)
 			g_state->fly_cam = g_state->cam;
 	}
+	if (g_state->flycam)
+		gui_text(0, 0, "flycam", gui_color(255, 255, 255));
+	if (g_state->debug)
+		gui_text(0, 16, "debug on", gui_color(255, 255, 255));
 
-	debug_origin_mark();
+//	debug_origin_mark();
 	/* do update here */
 	game_main();
 
+#if 1
 	for (float i = 0; i < 10; i++) {
 		float d = 12;
 		sys_render_push(&(struct render_entry){
@@ -276,13 +281,19 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 				.color = (vec3){1.0,0,0},
 			});
 	}
-
-	if (g_state->flycam)
+#endif
+	if (g_state->flycam || 1) {
 		g_state->cam = g_state->fly_cam;
-	else
+	} else {
 		g_state->cam = g_state->player_cam;
-
+	}
 	sys_render_exec();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, g_state->width, g_state->height);
+	glDisable(GL_CULL_FACE);
+	if (g_state->debug)
+		gui_draw();
 
 	g_input->last_input = *input;
 	game_asset_poll(g_asset);

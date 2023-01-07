@@ -57,6 +57,8 @@ static struct res_entry resfiles[ASSET_KEY_COUNT] = {
 	[MESH_ROCK_TEST] = { MESH_OBJ, .file = "res/rock.obj" },
 	[SHADER_TEST]  = { SHADER, .vert = "res/proj.vert", .frag = "res/test.frag", },
 	[SHADER_SOLID]  = { SHADER, .vert = "res/proj.vert", .frag = "res/solid.frag", },
+	[SHADER_GUI]  = { SHADER, .vert = "res/gui.vert", .frag = "res/gui.frag", },
+	[TEXTURE_GUI_SHAPE]  = { TEXTURE_PNG , .file = "res/ascii.png" },
 
 	//[MESH_TEST]  = { MESH_OBJ, .file = "res/test.obj", },
 	[DEBUG_SHADER_TEXTURE]  = { SHADER, .vert = "res/orth.vert", .frag = "res/texture.frag", },

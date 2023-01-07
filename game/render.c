@@ -242,9 +242,10 @@ render_pass(struct camera cam, int do_frustum_cull)
 		}
 
 		if (e.count == 0) {
-			glDisable(GL_CULL_FACE);
+//			glDisable(GL_CULL_FACE);
 			render_mesh(mesh);
 		} else {
+#if 0
 			GLuint vbo;
 			GLint id;
 			glGenBuffers(1, &vbo);
@@ -274,6 +275,7 @@ render_pass(struct camera cam, int do_frustum_cull)
 			glBufferData(GL_ARRAY_BUFFER, e.count * sizeof(vec4), NULL, GL_STREAM_DRAW);
 			glDeleteBuffers(1, &vbo);
 #undef OFFSET
+#endif
 		}
 	}
 }

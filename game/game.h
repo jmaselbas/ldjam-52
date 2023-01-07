@@ -44,6 +44,7 @@ void sys_init(struct system *sys, struct memory_zone zone);
 
 #include "asset.h"
 #include "entity.h"
+#include "gui.h"
 
 struct listener {
 	vec3 pos;
@@ -83,6 +84,7 @@ struct game_state {
 	struct camera fly_cam;
 
 	int mouse_grabbed;
+	struct gui_state *gui;
 #if 0
 
 	struct camera cam;
