@@ -118,18 +118,21 @@ mesh_bind(struct mesh *m, GLint position, GLint normal, GLint texture)
 		glBindBuffer(GL_ARRAY_BUFFER, m->vbo[m->idx_positions]);
 		glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(position);
+		glVertexAttribDivisor(position, 0);
 	}
 
 	if (normal >= 0) {
 		glBindBuffer(GL_ARRAY_BUFFER, m->vbo[m->idx_normals]);
 		glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(normal);
+		glVertexAttribDivisor(normal, 0);
 	}
 
 	if (texture >= 0) {
 		glBindBuffer(GL_ARRAY_BUFFER, m->vbo[m->idx_texcoords]);
 		glVertexAttribPointer(texture, 2, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(texture);
+		glVertexAttribDivisor(texture, 0);
 	}
 }
 

@@ -95,9 +95,6 @@ render_bind_mesh(struct shader *shader, struct mesh *mesh)
 	texcoord = glGetAttribLocation(shader->prog, "in_texcoord");
 
 	mesh_bind(mesh, position, normal, texcoord);
-	glVertexAttribDivisor(position, 0);
-	glVertexAttribDivisor(normal, 0);
-	glVertexAttribDivisor(texcoord, 0);
 }
 
 void
