@@ -213,6 +213,15 @@ game_play(void)
 	sys_render_push_cross(g_state->player_pos, VEC3_ONE, VEC3_AXIS_Z);
 }
 
+static  void
+game_menu(void)
+{
+	int w = g_state->width;
+	w = (w - 400) / 2;
+	gui_fill(w, 16, 400, 600, gui_color(50, 50, 50));
+	gui_text(w, 16, "harvest LD52", gui_color(255, 255, 255));
+}
+
 static void
 game_main(void)
 {
@@ -223,11 +232,32 @@ game_main(void)
 		io.show_cursor(!g_state->mouse_grabbed);
 		break;
 	case GAME_MENU:
+//		game_menu();
+		gui_text(0, 32, "menu", gui_color(250, 250, 250));
+		if (on_pressed(KEY_ESCAPE))
+			g_state->next_state = GAME_PLAY;
+		break;
 	case GAME_PLAY:
 		game_play();
+		if (on_pressed(KEY_ESCAPE))
+			g_state->next_state = GAME_MENU;
 		break;
 	}
+
+	if (g_state->state == g_state->next_state)
+		return;
+
 	g_state->state = g_state->next_state;
+	switch (g_state->state) {
+	case GAME_MENU:
+		g_state->mouse_grabbed = 0;
+		io.show_cursor(!g_state->mouse_grabbed);
+		break;
+	case GAME_PLAY:
+		g_state->mouse_grabbed = 1;
+		io.show_cursor(!g_state->mouse_grabbed);
+		break;
+	}
 }
 
 void
@@ -265,7 +295,7 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	if (g_state->debug)
 		gui_text(0, 16, "debug on", gui_color(255, 255, 255));
 
-//	debug_origin_mark();
+	debug_origin_mark();
 	/* do update here */
 	game_main();
 
