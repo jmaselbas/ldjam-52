@@ -46,6 +46,7 @@ void sys_init(struct system *sys, struct memory_zone zone);
 #include "asset.h"
 #include "entity.h"
 #include "gui.h"
+#include "sound.h"
 
 struct listener {
 	vec3 pos;
@@ -65,6 +66,7 @@ struct map {
 	struct ent small[4096];
 };
 
+#define NB_SOUND 1
 struct game_state {
 	int width;
 	int height;
@@ -108,6 +110,9 @@ struct game_state {
 
 	struct map map;
 
+	struct sound sound[NB_SOUND];
+        struct listener cur_listener;
+        struct listener nxt_listener;
 };
 
 extern struct game_state *g_state;

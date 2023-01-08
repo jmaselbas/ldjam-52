@@ -135,6 +135,7 @@ game_init(struct game_memory *game_memory)
 
 	game_gen_map(&g_state->map);
 	g_state->gui = gui_init(malloc(gui_size()));
+	sound_init(&g_state->sound[0], game_get_wav(g_asset, WAV_THEME), LOOP, 1, 0, (vec3){0.,0.,0.});
 }
 
 void
@@ -594,8 +595,9 @@ game_menu_main(void)
 	w = 64;
 
 	gui_text(w, y + i++ * 32, "HARVEST LD52", gui_color(255, 255, 255));
-	if (button(w, y + i++ * 32, "PLAY"))
+	if (button(w, y + i++ * 32, "PLAY")) {
 		g_state->next_state = GAME_PLAY;
+	}
 	if (button(w, y + i++ * 32, "OPTIONS"))
 		g_state->menu = MENU_OPTIONS;
 	i++;
@@ -721,23 +723,11 @@ show_ms(double f) {
 }
 
 static void
-do_audio(struct audio *audio)
+audio_set_listener(vec3 pos, vec3 dir, vec3 left)
 {
-	static size_t seq_pos;
-	float vol = g_state->options.main_volume;
-	size_t i;
-	struct wav *snd = game_get_wav(g_asset, ASSET_KEY_COUNT);
-
-	if (g_state->options.audio_mute)
-		vol = 0.0;
-
-	for (i = 0; i < audio->size; i++) {
-		struct sample sample;
-		int16_t v = ((int16_t *)snd->audio_data)[seq_pos++ % snd->extras.nb_samples];
-		sample.r = v / (float)0x1000 * vol;
-		sample.l = v / (float)0x1000 * vol;
-		audio->buffer[i] = sample;
-	}
+	g_state->nxt_listener.pos = pos;
+	g_state->nxt_listener.dir = dir;
+	g_state->nxt_listener.left = left;
 }
 
 void
@@ -790,6 +780,10 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	dbg_light_mark(&g_state->light);
 
 	sys_render_exec();
+	audio_set_listener(g_state->cam.position,
+                               vec3_normalize(camera_get_dir(&g_state->cam)),
+                               vec3_normalize(camera_get_left(&g_state->cam)));
+	do_audio(audio);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, g_input->width, g_input->height);
@@ -798,6 +792,7 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	show_ms(io.get_time() - t1);
 
 	gui_draw();
-	do_audio(audio);
+
 	game_asset_poll(g_asset);
 }
+

@@ -1,15 +1,13 @@
 #pragma once
 
-#include "wav.h"
-#include "sampler.h"
+typedef float sample;
 
-struct sample {
-	float l;
-	float r;
+struct frame {
+	sample l;
+	sample r;
 };
 
 struct audio {
-	size_t size; /* in sample */
-	struct sample *buffer;
+	size_t size; /* in frames */
+	struct frame *buffer;
 };
-

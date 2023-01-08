@@ -1,0 +1,61 @@
+Our engine uses 16bit 48000Khz wav files as internal audio format.
+
+* Stereo files, samples, and frames:
+
+Left and right channels are interleaved and
+audio_data looks like the following sequence of samples:
+
+s1_l,s1_r,s2_l,s2_r,...,sn_l,sn_r.
+
+A pair of samples is called a frame
+[s1_l,s1_r] = f1
+
+audio_data:
+f1,f2,f3,...,fn
+
+* Sdl_audio
+
+A frame must arrive to your soundcard physical output every
+(1/480000)s to guaranty sound continuity.
+
+In practice, as users we do not send samples directly to our
+soundcard hardware. Our game communicate with an audio server.
+
+The audio server allow multiple applications
+to share the same physical audio outputs.
+
+mpv  2ch-|                 2ch
+game 2ch-+-> audio_server ----> audio_driver -> spk_l
+vlc  2ch-|     (mixer)                          spk_r
+
+
+Audio server configuration is handled by sdl_audio library.
+The only interface to feed audio to our soundcard is an audio buffer.
+The audio loop of the engine continuously fills the output audio buffer
+with the samples generated from the game sounds.
+
+* Sounds
+
+We call sound, a source of audio in the game.
+
+Sounds can be localized in space (positionnal) or not.
+Positionnal sounds are spacialized using Mid/side panning.
+
+
+For now sounds are only wav files being played via the help
+of sample players (samplers).
+
+* Sampler
+
+The sampler allows playback control:
+	- Reset/trig audio file playback
+	- Loop
+and volume control.
+
+Stepping one time a sampler produces one output sample:
+- 0 if playback is stopped
+- the sample value at current playback position otherwise
+
+Output sample is converted from 16 bit integer
+to a float value between 0 and 1.
+

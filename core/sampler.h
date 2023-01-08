@@ -1,8 +1,15 @@
 #pragma once
 
+#include "audio.h"
+
 enum sampler_state{
 	STOP,
 	PLAY,
+};
+
+enum pb_mode{
+	ONE,
+	LOOP,
 };
 
 struct sampler {
@@ -23,7 +30,5 @@ struct sampler {
 	float vol;
 };
 
-void sampler_init(struct sampler *sampler, struct wav *wav);
-
-float step_sampler(struct sampler *sampler);
-
+void sampler_init(struct sampler *sampler, struct wav *wav, enum pb_mode mode, int autoplay);
+sample step_sampler(struct sampler *sampler);

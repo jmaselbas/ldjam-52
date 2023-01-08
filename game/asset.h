@@ -18,6 +18,8 @@ enum asset_key {
 	TEXTURE_GUI_SHAPE,
 	TEXTURE_TEXT,
 
+	WAV_THEME,
+	WAV_CLICK,
 	ASSET_KEY_COUNT,
 	/* internal assets id starts here, they are not handled as regular
 	 * assets and should not be passed to game_get_*() */
@@ -52,3 +54,4 @@ struct smf * game_get_smf(struct game_asset *game_asset, enum asset_key key);
 struct pre * game_get_pre(struct game_asset *game_asset, enum asset_key key);
 struct texture *game_get_texture(struct game_asset *game_asset, enum asset_key key);
 struct font_meta *game_get_font_meta(struct game_asset *game_asset, enum asset_key key);
+

@@ -1,12 +1,15 @@
 #pragma once
+#include "core/sampler.h"
 
-struct sound_entry {
-	struct sampler *sampler;
-	struct wav *wav;
-	vec3 entity_pos;
+struct sound {
+	struct sampler sampler;
+	enum pb_mode mode;
+	int is_positional;
+	vec3 pos;
 };
-void sys_sound_set_listener(struct system *sys, vec3 pos, vec3 dir, vec3 left);
-void sys_sound_push(struct system *sys, struct sound_entry *entry);
-void sys_sound_exec(struct system *sys, struct audio *audio);
+
+void sound_init(struct sound *sound, struct wav *wav, enum pb_mode mode, int autoplay, int is_positional, vec3 pos);
+
+void do_audio(struct audio *audio);
 
 

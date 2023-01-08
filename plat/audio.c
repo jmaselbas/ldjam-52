@@ -55,7 +55,7 @@ extern struct audio_io *sdl_audio_io;
 struct audio_io *audio_io;
 
 static size_t
-frame_size(enum audio_format format)
+sample_size(enum audio_format format)
 {
 	switch (format) {
 	case AUDIO_FORMAT_U8:
@@ -73,7 +73,7 @@ struct audio_state
 audio_create(struct audio_config config)
 {
 	struct audio_state audio = { .config = config };
-	size_t frame = config.channels * frame_size(config.format);
+	size_t frame = config.channels * sample_size(config.format);
 	size_t count = 8 * 512;
 	void *data = xvmalloc(NULL, 0, count * frame);
 
@@ -113,3 +113,4 @@ audio_step(struct audio_state *audio)
 {
 	audio_io->step(audio);
 }
+

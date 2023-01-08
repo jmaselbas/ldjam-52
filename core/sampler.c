@@ -1,41 +1,61 @@
-#include "engine.h"
+#include <stdint.h>
+#include <stddef.h>
+#include "sampler.h"
+#include "wav.h"
 
 void
-sampler_init(struct sampler *sampler, struct wav *wav)
+sampler_init(struct sampler *sampler, struct wav *wav, enum pb_mode mode, int autoplay)
 {
-	/* Playback */
 	sampler->wav      = wav;
 	sampler->state    = STOP;
 	sampler->pb_start = 0;
 	sampler->pb_end   = wav->extras.nb_samples;
 	sampler->pb_head  = 0;
-	/* Loop */
-	sampler->loop_on  = 1;
+	if (mode == LOOP)
+		sampler->loop_on = 1;
+	else
+		sampler->loop_on = 0;
 	sampler->loop_start = 0;
 	sampler->loop_end  = sampler->pb_end;
-
-	sampler->trig_on = 1;
+	if (autoplay)
+		sampler->trig_on = 1;
+	else
+		sampler->trig_on = 0;
 	sampler->vol = 1;
 }
 
-float step_sampler(struct sampler *sampler)
+static int
+is_pb_fini(struct sampler *sampler)
 {
-	int16_t *samples = (int16_t *) sampler->wav->audio_data;
-	float vol = sampler->vol;
-	int trig_on = sampler->trig_on;
-	size_t offset = sampler->pb_head;
-	int pb_fini = (sampler->pb_head >= sampler->wav->extras.nb_samples);
+	return (sampler->pb_head >= sampler->wav->extras.nb_samples);
+}
+
+static int
+is_retrigged(struct sampler *sampler)
+{
+	return (sampler->trig_on);
+}
+
+sample step_sampler(struct sampler *sampler)
+{
+	int16_t *samples;
+	float vol;
+	size_t offset;
 	float ret = 0;
 
-	if (sampler->state == PLAY && trig_on == 1) {
-		sampler->pb_head = sampler->pb_start;
+	if (is_retrigged(sampler)) {
 		sampler->trig_on = 0;
-	} else if (sampler->state == STOP && trig_on == 1) {
-		sampler->state = PLAY;
-		sampler->trig_on = 0;
+		switch (sampler->state) {
+			case PLAY:
+				sampler->pb_head = sampler->pb_start;
+				break;
+			case STOP:
+				sampler->state = PLAY;
+				break;
+		}
 	}
 
-	if(pb_fini) {
+	if(is_pb_fini(sampler)) {
 		if (sampler->loop_on) {
 			sampler->pb_head = sampler->loop_start;
 		} else {
@@ -50,6 +70,8 @@ float step_sampler(struct sampler *sampler)
 		break;
 	case PLAY:
 		offset = sampler->pb_head++;
+		vol = sampler->vol;
+		samples = (int16_t *) sampler->wav->audio_data;
 		ret = vol * (float) (samples[offset] / (float) INT16_MAX);
 		break;
 	}

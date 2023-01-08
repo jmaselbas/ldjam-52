@@ -8,6 +8,7 @@
 #include "core/engine.h"
 #include "game.h"
 #include "asset.h"
+#include "core/wav.h"
 
 struct asset_file {
 	const char *name;
@@ -65,7 +66,8 @@ static struct res_entry resfiles[ASSET_KEY_COUNT] = {
 
 	//[MESH_TEST]  = { MESH_OBJ, .file = "res/test.obj", },
 	[DEBUG_SHADER_TEXTURE]  = { SHADER, .vert = "res/orth.vert", .frag = "res/texture.frag", },
-//	[OGG_DRONE_BASS_1] = { SOUND_OGG, .file = "res/audio/drone_bass.ogg" },
+	[WAV_THEME] = { SOUND_WAV, .file = "res/audio/ld52_theme48.wav" },
+	[WAV_CLICK] = { SOUND_WAV, .file = "res/audio/clic.wav" },
 };
 
 struct mesh empty_mesh = { 0 };
