@@ -94,6 +94,7 @@ gui_begin(void *ctx)
 	gui->quad_count = 0;
 	gui->total_count = 0;
 	gui->draw_count = 0;
+	gui->color_count = 0;
 }
 
 static size_t
@@ -185,7 +186,6 @@ gui_fill(int x, int y, unsigned int w, unsigned int h, uint8_t c)
 	gui_shape(gui_rect(x, y, w, h),
 		  gui_rect(0, 0, 0, 0),
 		  gui_rect(c, 0, 0, 0));
-
 }
 
 uint8_t
@@ -310,6 +310,7 @@ static void
 gui_flush_draw_queue(void)
 {
 	size_t s = gui->quad_count * sizeof(*gui->quad);
+
 	glBindBuffer(GL_ARRAY_BUFFER, gui->inst_vbo);  GL_CHECK;
 	glBufferData(GL_ARRAY_BUFFER, s, gui->quad, GL_STREAM_DRAW);
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, gui->quad_count);

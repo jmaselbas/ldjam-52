@@ -9,13 +9,14 @@ typedef int64_t (file_read_t)(const char *path, void *buf, size_t size);
 typedef time_t (file_time_t)(const char *path);
 typedef void (window_close_t)(void);
 typedef void (window_cursor_t)(int show);
-
+typedef double (window_time_t)(void);
 struct io {
 	file_size_t *file_size;
 	file_read_t *file_read;
 	file_time_t *file_time;
 	window_close_t *close;  /* request window to be closed */
 	window_cursor_t *show_cursor; /* request cursor to be shown */
+	window_time_t *get_time;
 };
 
 struct game_memory {
@@ -53,11 +54,6 @@ struct listener {
 };
 
 struct game_state {
-	struct game_input {
-		struct input *input;
-		struct input last_input;
-	} input;
-	float dt;
 	int width;
 	int height;
 
@@ -85,43 +81,21 @@ struct game_state {
 
 	int mouse_grabbed;
 	struct gui_state *gui;
-#if 0
-
-	struct camera cam;
-	struct camera sun;
-	int flycam;
-	int flycam_forward, flycam_left;
-	float flycam_speed;
-
-	struct listener cur_listener;
-	struct listener nxt_listener;
-
-	struct font ascii_font;
-
-	float fps;
-	struct system sys_text;
-	struct system sys_sound;
-	struct system sys_midi;
-
-#define MAX_ENTITY_COUNT 512
-	size_t entity_count;
-	struct entity entity[MAX_ENTITY_COUNT];
-#endif
 };
 
 extern struct game_state *g_state;
 extern struct game_asset *g_asset;
-extern struct game_input *g_input;
+extern struct input *g_input;
 extern struct io io;
 
 static inline int
 is_pressed(int key)
 {
-	return key_pressed(g_input->input, key);
+	return is_key_pressed(g_input, key);
 }
 
 static inline int
 on_pressed(int key)
 {
-	return key_pressed(g_input->input, key) && !key_pressed(&g_input->last_input, key);
+	return on_key_pressed(g_input, key);
 }

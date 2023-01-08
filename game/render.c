@@ -179,7 +179,7 @@ render_pass(struct camera cam, int do_frustum_cull)
 
 		GLint time = glGetUniformLocation(shader->prog, "time");
 		if (time >= 0)
-			glUniform1f(time, g_input->input->time);
+			glUniform1f(time, g_input->time);
 
 		GLint camp = glGetUniformLocation(shader->prog, "camp");
 		if (camp >= 0)

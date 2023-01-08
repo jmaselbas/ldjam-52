@@ -2,6 +2,7 @@
 
 #define KEY_RELEASED            0
 #define KEY_PRESSED             1
+#define KEY_CHANGED             2
 
 #define KEY_UNKNOWN             0
 #define KEY_SPACE              32
@@ -133,7 +134,7 @@
 struct input {
 	unsigned int width;
 	unsigned int height;
-	double time;
+	double time, dt;
 	double xpos, ypos;
 	double xinc, yinc;
 
@@ -142,14 +143,25 @@ struct input {
 };
 
 static inline int
-key_pressed(struct input *input, int key)
+is_key_pressed(struct input *input, int key)
 {
-	return input->keys[key] == KEY_PRESSED;
+	return input->keys[key] & KEY_PRESSED;
+}
+
+static inline int
+on_key_pressed(struct input *input, int key)
+{
+	return input->keys[key] == (KEY_PRESSED | KEY_CHANGED);
+}
+
+static inline int
+on_key_release(struct input *input, int key)
+{
+	return input->keys[key] == (KEY_RELEASED | KEY_CHANGED);
 }
 
 static inline int
 mouse_button_pressed(struct input *input, int button)
 {
-	return input->buttons[button] == KEY_PRESSED;
+	return input->buttons[button] & KEY_PRESSED;
 }
-

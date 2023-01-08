@@ -79,13 +79,18 @@ request_cursor(int show)
 static void
 swap_input(struct input *new, struct input *buf)
 {
+	size_t i;
+
 	/* input buffering: this is to make sure that input callbacks
 	 * doesn't modify the game input while the game step runs. */
 
+	buf->time = new->time;
 	/* copy buffered input into the new input buffer */
 	*new = *buf;
 	/* grab time */
 	new->time = window_get_time();
+	new->dt = new->time - buf->time;
+
 	/* update window's framebuffer size */
 	new->width = width;
 	new->height = height;
@@ -93,6 +98,8 @@ swap_input(struct input *new, struct input *buf)
 	/* flush xinc and yinc */
 	buf->xinc = 0;
 	buf->yinc = 0;
+	for (i = 0; i < ARRAY_LEN(buf->keys); i++)
+		buf->keys[i] &= ~KEY_CHANGED;
 }
 
 static void
@@ -126,7 +133,7 @@ window_init(char *name)
 	if (!context)
 		die("Failed to create openGL context: %s\n", SDL_GetError());
 
-	SDL_GL_SetSwapInterval(0);
+	SDL_GL_SetSwapInterval(1);
 
 	show_cursor = 1;
 	SDL_SetRelativeMouseMode(show_cursor ? SDL_FALSE : SDL_TRUE);
@@ -184,16 +191,16 @@ mouse_motion_event(int xpos, int ypos, int xinc, int yinc)
 }
 
 static void
-mouse_button_event(int button, int act)
+mouse_button_event(unsigned int button, int act)
 {
 	struct input *input = &game_input_next;
 
-	if (button >= 0 && button < (int)ARRAY_LEN(input->buttons))
+	if (button < ARRAY_LEN(input->buttons))
 		input->buttons[button] = act;
 }
 
 static void
-key_event(int key, int mod, int act)
+key_event(unsigned int key, int mod, int act)
 {
 	struct input *input = &game_input_next;
 
@@ -202,8 +209,8 @@ key_event(int key, int mod, int act)
 			should_close = 1;
 	}
 
-	if ((unsigned int)key < ARRAY_LEN(input->keys))
-		input->keys[key] = act;
+	if (key < ARRAY_LEN(input->keys))
+		input->keys[key] = act | KEY_CHANGED;
 }
 
 /* Scancode vs Keycode:
@@ -338,6 +345,7 @@ struct io io = {
 	.file_time = file_time,
 	.close = request_close,
 	.show_cursor = request_cursor,
+	.get_time = window_get_time,
 };
 
 struct libgame libgame;
