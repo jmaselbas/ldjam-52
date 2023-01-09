@@ -1,5 +1,5 @@
 # game version
-VERSION = 0.52.1
+VERSION = 0.52.2
 
 # Customize below to fit your system
 CONFIG_JACK=n
