@@ -82,6 +82,7 @@ struct game_state {
 	enum {
 		MENU_MAIN,
 		MENU_OPTIONS,
+		MENU_ABOUT,
 	} menu;
 
 	struct options {

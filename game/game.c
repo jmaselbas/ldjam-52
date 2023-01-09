@@ -600,7 +600,10 @@ game_menu_main(void)
 	}
 	if (button(w, y + i++ * 32, "OPTIONS"))
 		g_state->menu = MENU_OPTIONS;
+	if (button(w, y + i++ * 32, "ABOUT"))
+		g_state->menu = MENU_ABOUT;
 	i++;
+
 	if (button(w, y + i++ * 32, "EXIT"))
 		io.close();
 	if (on_pressed(KEY_ESCAPE))
@@ -619,7 +622,12 @@ game_menu_options(void)
 		g_state->menu = MENU_MAIN;
 	if (on_pressed(KEY_ESCAPE))
 		g_state->menu = MENU_MAIN;
-	i = 1;
+	i = 0;
+
+	i++;
+	button(w, i++ * 32, "CONTROLS: WASD");
+
+	i++;
 	button(w, i++ * 32, "INPUT");
 	if (enable(w, i++ * 32, "inv Y", g_state->options.mouse_inv_y))
 		g_state->options.mouse_inv_y = !g_state->options.mouse_inv_y;
@@ -627,11 +635,53 @@ game_menu_options(void)
 	g_state->options.mouse_speed = slider(w, i++ * 32, "speed", 0.0001, 0.005,
 					      g_state->options.mouse_speed);
 
+	i++;
 	button(w, i++ * 32, "SOUND");
 	if (enable(w, i++ * 32, "mute", g_state->options.audio_mute))
 		g_state->options.audio_mute = !g_state->options.audio_mute;
 	g_state->options.main_volume = slider(w, i++ * 32, "volume", 0.0, 1.0,
 					      g_state->options.main_volume);
+
+
+	i++;
+	button(w, i++ * 32, "DEBUG");
+	if (enable(w, i++ * 32, "enable", g_state->debug))
+		g_state->debug = !g_state->debug;
+	if (g_state->debug) {
+		button(w, i++ * 32, " - flycam: Z");
+		button(w, i++ * 32, " - debug: X");
+	}
+}
+
+static void
+game_menu_about(void)
+{
+	int i = 0;
+	int l = 30*14;
+	int w = (g_input->width - l) / 2;
+	int y = g_input->height / 2;
+	int c = gui_color(255, 255, 255);
+
+	if (button(64, y + i++ * 32, "EXIT"))
+		g_state->menu = MENU_MAIN;
+	if (on_pressed(KEY_ESCAPE))
+		g_state->menu = MENU_MAIN;
+
+	i = 4;
+	gui_text(w, i++ * 32, "LD52 jam entry haarvest", c);
+	i++;
+	gui_text(w, i++ * 32, "This \"game\" has been made by 2 people in 3 days", c);
+	gui_text(w, i++ * 32, "There isn't much a gameplay ... that's hard", c);
+	gui_text(w, i++ * 32, "But still here is the result", c);
+	gui_text(w, i++ * 32, "We had a lot of doubts", c);
+	gui_text(w, i++ * 32, "We had a lot of fun", c);
+	gui_text(w, i++ * 32, "We came a long way to show you this", c);
+	gui_text(w, i++ * 32, "This is not the best game in the world", c);
+	gui_text(w, i++ * 32, "This is a tribute to our first jam", c);
+	i++;
+
+	gui_text(w, i++ * 32, "-- thanks", c);
+	gui_text(w, i++ * 32, "Have a good year :3", c);
 }
 
 static void
@@ -643,6 +693,9 @@ game_menu(void)
 		break;
 	case MENU_OPTIONS:
 		game_menu_options();
+		break;
+	case MENU_ABOUT:
+		game_menu_about();
 		break;
 	}
 }
