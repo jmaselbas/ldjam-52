@@ -31,7 +31,7 @@ test-obj = $(test-src:.c=.o)
 TESTBIN = test
 BIN = haarvest$(EXT)
 LIB = $(LIBDIR)/libgame.so
-RES += res/proj.vert res/test.frag res/ascii.png res/rock.obj res/small.obj res/gui.frag res/gui.vert res/sky.frag res/sky.vert res/floor.obj res/audio/ld52_theme48.wav
+RES += res/proj.vert res/orth.vert res/texture.frag res/solid.frag res/test.frag res/ascii.png res/rock.obj res/small.obj res/gui.frag res/gui.vert res/sky.frag res/sky.vert res/floor.obj res/audio/ld52_theme48.wav
 
 # dynlib is the default target for now, not meant for release
 all: dynlib static

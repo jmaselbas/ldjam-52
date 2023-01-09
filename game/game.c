@@ -642,7 +642,6 @@ game_menu_options(void)
 	g_state->options.main_volume = slider(w, i++ * 32, "volume", 0.0, 1.0,
 					      g_state->options.main_volume);
 
-
 	i++;
 	button(w, i++ * 32, "DEBUG");
 	if (enable(w, i++ * 32, "enable", g_state->debug))

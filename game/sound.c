@@ -68,6 +68,8 @@ do_audio(struct audio *audio)
 	struct listener nxt;
 	size_t i, j;
 	float l, r;
+	float vol = g_state->options.audio_mute ? 0.0 :
+		g_state->options.main_volume;
 	struct sound *s;
 	struct listener li;
 	struct lrcv lrcv;
@@ -96,11 +98,11 @@ do_audio(struct audio *audio)
 				r = step_sampler(&s->sampler);
 			}
 			if (s->is_positional){
-				audio->buffer[j].l += (l * lrcv.l + l *lrcv.c)*lrcv.v;
-				audio->buffer[j].r += (r * lrcv.r + r *lrcv.c)*lrcv.v;
+				audio->buffer[j].l += ((l * lrcv.l + l *lrcv.c)*lrcv.v)*vol;
+				audio->buffer[j].r += ((r * lrcv.r + r *lrcv.c)*lrcv.v)*vol;
 			} else {
-				audio->buffer[j].l += l;
-				audio->buffer[j].r += r;
+				audio->buffer[j].l += l * vol;
+				audio->buffer[j].r += r * vol;
 			}
 
 		}
