@@ -11,6 +11,11 @@ CONFIG_SDL_AUDIO=y
 PREFIX := /usr/local
 MANPREFIX := $(PREFIX)/share/man
 
+# Target specific configuration
+# Grab a sane default value for native target using the selected toolchain.
+TARGET ?= $(shell $(CC) -dumpmachine)
+-include target-$(TARGET).mk
+
 ifneq ($(CROSS_COMPILE),)
 CC      = $(CROSS_COMPILE)cc
 LD      = $(CROSS_COMPILE)ld
@@ -22,11 +27,6 @@ READELF = $(CROSS_COMPILE)readelf
 OBJSIZE = $(CROSS_COMPILE)size
 STRIP   = $(CROSS_COMPILE)strip
 endif
-
-# Target specific configuration
-# Grab a sane default value for native target using the selected toolchain.
-TARGET ?= $(shell $(CC) -dumpmachine)
--include target-$(TARGET).mk
 
 PKG_CONFIG_PATH ?= /usr/lib/pkgconfig/
 PKG ?= PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config
