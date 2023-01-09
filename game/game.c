@@ -788,10 +788,13 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, g_input->width, g_input->height);
 	glDisable(GL_CULL_FACE);
-	show_fps(1.0/g_input->dt);
-	show_ms(io.get_time() - t1);
-
 	gui_draw();
+
+	gui_begin(g_state->gui);
+	show_fps(1.0/g_input->dt);
+	show_ms((io.get_time() - t1) * 1000.0);
+	if (g_state->debug)
+		gui_draw();
 
 	game_asset_poll(g_asset);
 }
