@@ -1,4 +1,4 @@
-#version 410 core
+#version 330 core
 
 in vec3 in_pos;
 in vec2 in_texcoord;
@@ -8,6 +8,6 @@ uniform mat4 view;
 
 void main(void)
 {
-	gl_Position = vec4(in_pos.x, in_pos.y, 1, 1.0);
+	gl_Position = vec4(in_pos.x, in_pos.y, 1.0, 1.0);
 	dir = (transpose(view) * (inverse(proj) * gl_Position)).xyz;
 }

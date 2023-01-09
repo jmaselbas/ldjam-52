@@ -1,4 +1,4 @@
-#version 410 core
+#version 330 core
 
 in vec3 dir;
 out vec4 out_color;
@@ -25,7 +25,7 @@ const vec3 sun_color = vec3(0.9, 0.99, 0.97);
 
 uniform float time;
 
-#define PI2 (2*3.1416)
+#define PI2 (2.0*3.1416)
 
 /* sun direction */
 uniform vec3 lightd;
@@ -33,10 +33,10 @@ void main(void)
 {
 	vec3 sun = -lightd;
 	vec3 pos = normalize(dir);
-	float mu = smoothstep(0.995, 1, dot(normalize(pos), (sun)));
-	float mo = max(0, dot(normalize(pos), (sun)));
-	float mi = max(0, -dot(normalize(pos), (sun)));
-	float up = dot(pos, vec3(0,1,0));
+	float mu = smoothstep(0.995, 1.0, dot(normalize(pos), (sun)));
+	float mo = max(0.0, dot(normalize(pos), (sun)));
+	float mi = max(0.0, -dot(normalize(pos), (sun)));
+	float up = dot(pos, vec3(0.0,1.0,0.0));
 	vec3 top, col;
 
 	/* color dodge */
