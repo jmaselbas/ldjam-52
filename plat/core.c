@@ -26,7 +26,7 @@ file_size(const char *path)
 	int64_t size;
 	FILE *f;
 
-	f = fopen(path, "r");
+	f = fopen(path, "rb");
 	if (f == NULL) {
 		fprintf(stderr, "fail to open '%s'\n", path);
 		size = -1;
@@ -46,12 +46,20 @@ file_read(const char *path, void *buf, size_t size)
 	FILE *f;
 
 	if (buf) {
-		f = fopen(path, "r");
+		f = fopen(path, "rb");
 		if (f == NULL) {
 			fprintf(stderr, "fail to open '%s'\n", path);
 			ret = -1;
 		} else {
-			ret = fread(buf, sizeof(char), size, f);
+			do {
+				ret = fread(buf, 1, size, f);
+				buf += ret;
+				size -= ret;
+			} while (size > 0 && ret != 0);
+			if (ret == 0) {
+				fprintf(stderr, "fail to read '%s'\n", path);
+				ret = -1;
+			}
 			fclose(f);
 		}
 	}
