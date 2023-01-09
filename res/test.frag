@@ -41,21 +41,20 @@ float shadow(void)
 }
 void main(void)
 {
+	const vec3 sky_color = vec3(0.324, 0.0420, 0.0178);
 	float inc = dot(normal, lightd);
 	vec2 uv = texcoord;
-	vec3 col = vec3(uv.yyy);//texture(tex, uv).rgb;
+	vec3 col = vec3(uv.yyy) + sky_color * 0.01;
 	float z = gl_FragCoord.z / gl_FragCoord.w;
 	float fog = exp(-fog_density * z * z);
 
 	vec3 p = 0.5 + 0.5 * (shadowpos.xyz / shadowpos.w);
 	float dep = texture(shadowmap, p.xy).r;
-	bool inshadow = p.z > (dep + 0.000005) || inc > 0.0;
+	bool inshadow = p.z > (dep - 0.000001) || inc > 0.0;
+
 	col = mix(col, col+vec3(0.2,0.1,0.15)*0.5, 1.0- dot(normal, vec3(0,1,0)));
 	if (inshadow)
 		col *= 0.0;
-
-	col = mix(fog_color, col, clamp(fog, 0.0, 1.0));
-
+		col = mix(fog_color, col, clamp(fog, 0.0, 1.0));
 	out_color = vec4(col, 1);
 }
-

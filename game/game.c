@@ -131,7 +131,7 @@ game_init(struct game_memory *game_memory)
 	g_state->options.mouse_inv_y = 0;
 	g_state->options.mouse_speed = 0.001;
 	g_state->options.main_volume = 0.5;
-	g_state->options.audio_mute = 1;
+	g_state->options.audio_mute = 0;
 
 	game_gen_map(&g_state->map);
 	g_state->gui = gui_init(malloc(gui_size()));
@@ -655,7 +655,8 @@ game_main(void)
 		io.show_cursor(!g_state->mouse_grabbed);
 		break;
 	case GAME_MENU:
-		camera_set(&g_state->player_cam, (vec3){80.631607, 0.872238, 7.466835}, (quaternion){ {0.172121, -0.341403, -0.063745}, -0.921831});
+		camera_set(&g_state->player_cam, (vec3){-68.169380, 1.500000, -42.527836}, (quaternion){ {0.119874, -0.395366, -0.052128}, -0.909185});
+//		camera_set(&g_state->player_cam, (vec3){80.631607, 0.872238, 7.466835}, (quaternion){ {0.172121, -0.341403, -0.063745}, -0.921831});
 		game_menu();
 		if (g_state->debug)
 			gui_text(0, 32, "menu", gui_color(250, 250, 250));
@@ -781,7 +782,7 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	} else {
 		g_state->cam = g_state->player_cam;
 	}
-	vec3 pos = g_state->player_pos;
+	vec3 pos = g_state->cam.position;
 	light_set_pos(&g_state->light, (vec3){-13.870439, 27.525631, -11.145432});
 	light_look_at(&g_state->light, VEC3_ZERO, VEC3_AXIS_Y);
 	pos = vec3_add(pos, vec3_mult(-50, light_get_dir(&g_state->light)));

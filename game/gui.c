@@ -3,10 +3,13 @@
 #include "game.h"
 
 #include <stdio.h>
-#define GL_CHECK ({ if (glGetError() != GL_NO_ERROR) \
-			    fprintf(stderr, "%s:%u %s glerror !\n",		\
-				    __FILE__, __LINE__, __func__); })	\
-
+#if 1
+#define GL_CHECK
+#else
+#define GL_CHECK ({ if (glGetError() != GL_NO_ERROR)			\
+			fprintf(stderr, "%s:%u %s glerror !\n",		\
+				__FILE__, __LINE__, __func__); }
+#endif
 
 #define LEN ARRAY_LEN
 #define GLSL_VERSION "#version 330 core\n"
