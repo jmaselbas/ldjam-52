@@ -29,9 +29,9 @@ plt-dynlib-n-obj = $(addprefix $(OUT),$(plt-dynlib-n-src:.c=.o))
 test-src += test.c
 test-obj = $(test-src:.c=.o)
 TESTBIN = test
-BIN = ldjam-52$(EXT)
+BIN = haarvest$(EXT)
 LIB = $(LIBDIR)/libgame.so
-RES += res/proj.vert res/test.frag res/ascii.png res/rock.obj res/small.obj res/gui.frag res/gui.vert res/sky.frag res/sky.vert res/floor.obj
+RES += res/proj.vert res/test.frag res/ascii.png res/rock.obj res/small.obj res/gui.frag res/gui.vert res/sky.frag res/sky.vert res/floor.obj res/audio/ld52_theme48.wav
 
 # dynlib is the default target for now, not meant for release
 all: dynlib static
