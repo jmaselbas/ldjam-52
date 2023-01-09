@@ -13,7 +13,6 @@ uniform mat4 view;
 uniform mat4 model;
 uniform mat4 lsview;
 uniform mat4 lsproj;
-uniform float time;
 
 void main(void)
 {
@@ -21,8 +20,8 @@ void main(void)
 
 	gl_Position = proj * view * pos;
 	shadowpos = lsproj * lsview * pos;
-	shadowpos.xyz = 0.5 + 0.5 * shadowpos.xyz / shadowpos.w;
+//	shadowpos.xyz = 0.5 + 0.5 * (shadowpos.xyz / shadowpos.w);
 	position = pos.xyz;
 	texcoord = in_texcoord;
-	normal = in_normal;
+	normal = transpose(inverse(mat3(model))) * in_normal;
 }

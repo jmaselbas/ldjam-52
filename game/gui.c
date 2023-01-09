@@ -367,16 +367,16 @@ gui_draw(void)
 	utex = glGetUniformLocation(prog, "t_shape");
 	if (utex >= 0 && tex_shape != NULL) {
 		uint8_t b[3] = { 0xff, 0xff, 0xff };
-		glActiveTexture(GL_TEXTURE0 + 0);
-		glUniform1i(utex, 0);
+		glActiveTexture(GL_TEXTURE0 + 1);
+		glUniform1i(utex, 1);
 		glBindTexture(tex_shape->type, tex_shape->id);
 		glTexSubImage2D(tex_shape->type, 0, 0, 0, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &b);
 	}
 
 	utex = glGetUniformLocation(prog, "t_color");
 	if (utex >= 0 && tex_color != NULL) {
-		glActiveTexture(GL_TEXTURE0 + 1);
-		glUniform1i(utex, 1);
+		glActiveTexture(GL_TEXTURE0 + 2);
+		glUniform1i(utex, 2);
 		glBindTexture(tex_color->type, tex_color->id);
 		glTexSubImage2D(tex_color->type, 0, 0, 0, 128, 1, GL_RGB, GL_UNSIGNED_BYTE, gui->colors);
 	}

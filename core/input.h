@@ -161,7 +161,19 @@ on_key_release(struct input *input, int key)
 }
 
 static inline int
-mouse_button_pressed(struct input *input, int button)
+is_mouse_button_pressed(struct input *input, int button)
 {
 	return input->buttons[button] & KEY_PRESSED;
+}
+
+static inline int
+on_mouse_button_pressed(struct input *input, int button)
+{
+	return input->buttons[button] == (KEY_PRESSED | KEY_CHANGED);
+}
+
+static inline int
+on_mouse_button_release(struct input *input, int button)
+{
+	return input->buttons[button] == (KEY_RELEASED | KEY_CHANGED);
 }

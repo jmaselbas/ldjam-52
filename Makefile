@@ -31,7 +31,7 @@ test-obj = $(test-src:.c=.o)
 TESTBIN = test
 BIN = ldjam-52$(EXT)
 LIB = $(LIBDIR)/libgame.so
-RES += res/text.vert res/text.frag res/ascii.png res/rock.obj
+RES += res/proj.vert res/test.frag res/ascii.png res/rock.obj res/small.obj res/gui.frag res/gui.vert res/sky.frag res/sky.vert res/floor.obj
 
 # dynlib is the default target for now, not meant for release
 all: dynlib static

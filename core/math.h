@@ -42,6 +42,33 @@ typedef struct quaternion_t {
 #define MAT4_IDENTITY ((mat4){{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}})
 #define QUATERNION_IDENTITY ((quaternion){{0, 0, 0}, 1})
 
+static inline vec2
+vec2_sub(vec2 u, vec2 v)
+{
+	vec2 r = { u.x - v.x, u.y - v.y };
+	return r;
+}
+
+static inline vec2
+vec2_add(vec2 u, vec2 v)
+{
+	vec2 r = { u.x + v.x, u.y + v.y };
+	return r;
+}
+
+static inline float
+vec2_dot(vec2 u, vec2 v)
+{
+	return u.x * v.x + u.y * v.y;
+}
+
+static inline vec2
+vec2_mult(float s, vec2 v)
+{
+	vec2 r = { s * v.x, s * v.y };
+	return r;
+}
+
 /* vec3 operations */
 /* print_vec3
    Specification:

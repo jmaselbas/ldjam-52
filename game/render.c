@@ -153,7 +153,7 @@ render_pass(struct camera cam, int do_frustum_cull)
 		if (!mesh || last_mesh != e.mesh)
 			mesh = game_get_mesh(game_asset, e.mesh);
 
-		if (0 && do_frustum_cull && e.cull && frustum_cull(frustum, mesh, e.position, e.scale))
+		if (do_frustum_cull && e.cull && frustum_cull(frustum, mesh, e.position, e.scale))
 			continue;
 
 		if (!shader || last_shader != e.shader) {
@@ -285,7 +285,7 @@ sys_render_init(struct memory_zone zone)
 	struct system *sys = &g_state->sys_render;
 	sys_init(sys, zone);
 #if 0
-	if (0 && g_state->depth_fbo != 0) {
+	if (1 && g_state->depth_fbo != 0) {
 		/* Free texture */
 		delete_tex(&g_state->depth);
 
@@ -298,10 +298,14 @@ sys_render_init(struct memory_zone zone)
 		return;
 
 	struct texture *depth = &g_state->depth;
-	size_t size = 1024;
+	size_t size = 1024*4;
 	*depth = create_2d_tex(size, size, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
 	glGenFramebuffers(1, &g_state->depth_fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, g_state->depth_fbo);
@@ -309,19 +313,34 @@ sys_render_init(struct memory_zone zone)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		printf("Error framebuffer incomplete\n");
 	}
+}
 
+static void
+camera_update_orth(struct camera *c, int width, int height)
+{
+	float r = 64.0;
+	float t = 64.0;
+	float f = 800.0;//c->zFar;
+	float n = 0.0; //c->zNear;
+
+	c->proj.m[0][0] = 1.0 / r;
+	c->proj.m[1][1] = 1.0 / t;
+	c->proj.m[2][2] = -2.0  / (f - n);
+	c->proj.m[2][3] = 0.0;
+	c->proj.m[3][2] = -(f + n) / (f - n);
+	c->proj.m[3][3] = 1.0;
 }
 
 void
 sys_render_exec(void)
 {
 	struct light *light = &g_state->light;
+//	camera_set(&g_state->sun, (vec3){-13.870439, 27.525631, -11.145432}, (quaternion){ {0.379877, 0.442253, -0.214377}, 0.783676});
 
 	glBindFramebuffer(GL_FRAMEBUFFER, g_state->depth_fbo);
-	light_set_pos(light, (vec3){-8.113143, 39.749962, -7.408203});
-	light_look_at(light, (vec3){0.0, 0., 0.}, (vec3){0., 1., 0.});
 
-	camera_init(&g_state->sun, 1.0, g_state->depth.width / g_state->depth.height);
+//	camera_init(&g_state->sun, 10.0, g_state->depth.width / g_state->depth.height);
+	camera_update_orth(&g_state->sun, g_state->depth.width, g_state->depth.height);
 	camera_set(&g_state->sun, light->pos, light->rot);
 
 	/* clean depth buffer */
@@ -331,14 +350,13 @@ sys_render_exec(void)
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-
 	glCullFace(GL_FRONT);
 	glEnable(GL_CULL_FACE);
 
 	render_pass(g_state->sun, 1);
 
 	if (g_state->debug) {
-//		debug_texture((vec2){200, 200}, &g_state->depth);
+		debug_texture((vec2){200, 200}, &g_state->depth);
 	}
 
 	/* Rebind the default framebuffer */

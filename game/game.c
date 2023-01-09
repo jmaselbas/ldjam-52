@@ -17,6 +17,94 @@ struct game_state *g_state;
 struct game_asset *g_asset;
 struct input *g_input;
 
+
+static inline uint64_t rotl(const uint64_t x, int k) {
+	return (x << k) | (x >> (64 - k));
+}
+
+static uint64_t s[4];
+uint64_t rand_seed(uint64_t seed) {
+	s[0] = s[1] = s[2] = s[3] = seed;
+}
+
+uint64_t rand_next(void) {
+
+	const uint64_t result = s[0] + s[3];
+
+	const uint64_t t = s[1] << 17;
+
+	s[2] ^= s[0];
+	s[3] ^= s[1];
+	s[1] ^= s[2];
+	s[0] ^= s[3];
+
+	s[2] ^= t;
+
+	s[3] = rotl(s[3], 45);
+
+	return result;
+}
+void rand_jump(void) {
+	static const uint64_t JUMP[] = { 0x180ec6d33cfd0aba, 0xd5a61266f0c9392c, 0xa9582618e03fc9aa, 0x39abdc4529b1661c };
+
+	uint64_t s0 = 0;
+	uint64_t s1 = 0;
+	uint64_t s2 = 0;
+	uint64_t s3 = 0;
+	for(int i = 0; i < sizeof JUMP / sizeof *JUMP; i++)
+		for(int b = 0; b < 64; b++) {
+			if (JUMP[i] & UINT64_C(1) << b) {
+				s0 ^= s[0];
+				s1 ^= s[1];
+				s2 ^= s[2];
+				s3 ^= s[3];
+			}
+			rand_next();
+		}
+
+	s[0] = s0;
+	s[1] = s1;
+	s[2] = s2;
+	s[3] = s3;
+}
+
+static void
+game_gen_map(struct map *map)
+{
+	size_t i;
+	rand_seed(0xff55aa55deafbeef);
+	for (i = 0; i < ARRAY_LEN(map->rocks); i++) {
+		float x = -250.0 + 500.0 * ((rand_next()) / (float)UINT64_MAX);
+		float y = -0.1   + 0.2 * ((rand_next()) / (float)UINT64_MAX);
+		float z = -250.0 + 500.0 * ((rand_next()) / (float)UINT64_MAX);
+		float a = -3.1415 + 3.1415 * ((rand_next()) / (float)UINT64_MAX);
+		float s = 0.4 + 0.5 * ((rand_next()) / (float)UINT64_MAX);
+		quaternion q = quaternion_axis_angle(VEC3_AXIS_Y, a);
+		struct ent r = {
+			.pos = {x, y, z},
+			.scale = s,
+			.radius = s*2,
+			.rot = q,
+		};
+		map->rocks[i] = r;
+	}
+	for (i = 0; i < ARRAY_LEN(map->small); i++) {
+		float x = -250.0 + 500.0 * ((rand_next()) / (float)UINT64_MAX);
+		float y = -0.1   + 0.2 * ((rand_next()) / (float)UINT64_MAX);
+		float z = -250.0 + 500.0 * ((rand_next()) / (float)UINT64_MAX);
+		float a = -3.1415 + 3.1415 * ((rand_next()) / (float)UINT64_MAX);
+		float s = 0.4 + 0.5 * ((rand_next()) / (float)UINT64_MAX);
+		quaternion q = quaternion_axis_angle(VEC3_AXIS_Y, a);
+		struct ent r = {
+			.pos = {x, y, z},
+			.scale = s,
+			.radius = s*2,
+			.rot = q,
+		};
+		map->small[i] = r;
+	}
+}
+
 void
 sys_init(struct system *sys, struct memory_zone zone)
 {
@@ -40,7 +128,12 @@ game_init(struct game_memory *game_memory)
 	g_state->fly_cam = g_state->player_cam = g_state->cam;
 
 	g_state->state = GAME_INIT;
+	g_state->options.mouse_inv_y = 0;
+	g_state->options.mouse_speed = 0.001;
+	g_state->options.main_volume = 0.5;
+	g_state->options.audio_mute = 1;
 
+	game_gen_map(&g_state->map);
 	g_state->gui = gui_init(malloc(gui_size()));
 }
 
@@ -54,7 +147,7 @@ game_fini(struct game_memory *memory)
 static void
 dbg_origin_mark(void)
 {
-	if (g_state->debug || 1) {
+	if (g_state->debug) {
 	vec3 o = {0, 0, 0};
 	vec3 r = {1, 0, 0};
 	vec3 g = {0, 1, 0};
@@ -66,17 +159,21 @@ dbg_origin_mark(void)
 }
 
 static void
-debug_light_mark(struct light *l)
+dbg_light_mark(struct light *l)
 {
+	if (g_state->debug) {
 	vec3 r = {1, 0, 0};
 	vec3 g = {0, 1, 0};
 	sys_render_push_cross(l->pos, (vec3){0.1,0.1,0.1}, g);
 	sys_render_push_vec(l->pos, l->dir, r);
+	}
 }
 
 static void
 flycam_move(void)
 {
+	const float mouse_speed = g_state->options.mouse_speed;
+	const int mouse_inv_y = g_state->options.mouse_inv_y;
 	struct camera *cam = &g_state->fly_cam;
 	float dt = g_input->dt;
 	vec3 forw = camera_get_dir(cam);
@@ -115,10 +212,12 @@ flycam_move(void)
 	}
 
 	if (dx || dy) {
-		camera_rotate(cam, VEC3_AXIS_Y, -0.001 * dx);
+		if (mouse_inv_y)
+			dy = -dy;
+		camera_rotate(cam, VEC3_AXIS_Y, -mouse_speed * dx);
 		left = camera_get_left(cam);
 		left = vec3_normalize(left);
-		camera_rotate(cam, left, 0.001 * dy);
+		camera_rotate(cam, left, mouse_speed * dy);
 	}
 
 	/* drop camera config to stdout */
@@ -230,37 +329,42 @@ dist_to_triangle(vec3 q, vec3 a, vec3 b, vec3 c, float r)
 static vec3
 player_walk(vec3 pos, vec3 new)
 {
-	const float player_radius = 0.5;
-	const float S = 0.1;
-	const size_t N = 10;
-	vec3 tri[3] = {
-		{1.2,0,0},
-		{-1.6,0,-1.2},
-		{0,0,2.3},
-	};
+	struct map *map = &g_state->map;
+	const float player_radius = 0.4;
+	const float S = 0.2;
+	float deep;
+	vec3 slv;
+	size_t it, i;
 
-	vec3 s_pos[N][N];
-	int x, y;
-	float ox, oy;
-	int px = pos.x/S, py = pos.z/S;
-	ox = S*(px - (int)(N/2));
-	oy = S*(py - (int)(N/2));
-	static float t;
-	t += g_input->dt;
-	for (x = 0; x < N; x++) {
-		for (y = 0; y < N; y++) {
-			vec3 pp = {ox + S*x, 0, oy + S*y};
-			if (dist_to_triangle(pp, tri[0], tri[1], tri[2], player_radius))
-				dbg_cross(pp, (vec3){0.05*sin(t),0.05*sin(t+x+y),0.05*sin(t+x+y)}, (vec3){1,0,0});
-			else
-				dbg_cross(vec3_add((vec3){0,0.05*sin(t+x+y),0},pp), (vec3){0.05,0.05,0.05}, (vec3){0,1,0});
+	new.y = 0;
+	slv = new;
+	for (it = 0; it < 4; it++) {
+		deep = -1;
+	for (i = 0; i < ARRAY_LEN(map->rocks); i++) {
+		float r = map->rocks[i].radius + player_radius;
+		vec2 p = {map->rocks[i].pos.x, map->rocks[i].pos.z};
+		vec2 n = {new.x, new.z};
+		vec2 d = vec2_sub(p, n);
+		float dist = vec2_dot(d, d);
+		if (dist < r*r) {
+			dbg_circle((vec3){p.x,0,p.y}, vec3_mult(map->rocks[i].radius,(vec3){1,0,1}), (vec3){1,0,0});
+			dbg_circle((vec3){p.x,0,p.y}, vec3_mult(r, (vec3){1,0,1}), (vec3){0,1,0});
+
+//			vec2 d = vec2_sub(dst, point_on_edge(dst, e[i])); /* distance to the edge */
+			float depth = sqrt(dist);
+			if (r - depth > deep) {
+				vec2 dir = vec2_mult(1.0 / depth, d); /* normalized */
+				deep = r - depth;
+				dbg_line((vec3){p.x, 0, p.y}, (vec3){p.x-r*dir.x, 0, p.y-r*dir.y}, (vec3){1,0,0});
+//				dbg_line((vec3){p.x, 0, p.y}, (vec3){p.x+r*dir.x, 0, p.y+r*dir.y}, (vec3){1,0,0});
+				slv.x = p.x-r*dir.x;
+				slv.z = p.y-r*dir.y;
+			}
 		}
 	}
-	dbg_line(tri[0], tri[1], (vec3){0,1.0,1.0});
-	dbg_line(tri[1], tri[2], (vec3){0,1.0,1.0});
-	dbg_line(tri[0], tri[2], (vec3){0,1.0,1.0});
-	dbg_circle(pos,(vec3){player_radius,0.0,player_radius}, (vec3){0,1.0,1.0});
-	dbg_circle(new,(vec3){player_radius,0.0,player_radius}, (vec3){0,1.0,0});
+	new = slv;
+	dbg_circle(new, vec3_mult(player_radius, (vec3){1,0,1}), (vec3){1,0,1});
+	}
 
 	return new;
 }
@@ -268,9 +372,9 @@ player_walk(vec3 pos, vec3 new)
 static void
 player_move(void)
 {
-	const float mouse_speed = 0.002;
-	const float player_speed = 1;
-	const int mouse_inv_y = 0;
+	const float mouse_speed = g_state->options.mouse_speed;
+	const float player_speed = 5;
+	const int mouse_inv_y = g_state->options.mouse_inv_y;
 	struct camera *cam = &g_state->player_cam;
 	int dir_forw = 0, dir_left = 0;
 	vec3 left = camera_get_left(cam);
@@ -305,13 +409,10 @@ player_move(void)
 	if (dx || dy) {
 		float f = vec3_dot(VEC3_AXIS_Y, camera_get_dir(cam));
 		float u = vec3_dot(VEC3_AXIS_Y, camera_get_up(cam));
-		float a_dy = sin(mouse_speed * dy);
+		float a_dy = sin(mouse_speed * dy * (mouse_inv_y ? -1 : 1));
 		float a_max = 0.1;
 
-		if (mouse_inv_y)
-			camera_rotate(cam, VEC3_AXIS_Y,  mouse_speed * dx);
-		else
-			camera_rotate(cam, VEC3_AXIS_Y, -mouse_speed * dx);
+		camera_rotate(cam, VEC3_AXIS_Y, -mouse_speed * dx);
 		left = camera_get_left(cam);
 		left = vec3_normalize(left);
 
@@ -324,14 +425,15 @@ player_move(void)
 		camera_rotate(cam, left, a_dy);
 	}
 
-	g_state->player_pos = player_walk(pos, new);
+	new = player_walk(pos, new);
+	g_state->player_pos = new;
 }
 
 #define VEC3_ONE (vec3){1,1,1}
 static void
 game_play(void)
 {
-	vec3 player_eye = (vec3){0.0, 0.7, 0.0};
+	vec3 player_eye = (vec3){0.0, 1.5, 0.0};
 	if (g_state->flycam)
 		flycam_move();
 	else {
@@ -343,19 +445,60 @@ game_play(void)
 		gui_printf(0, g_input->height - 32, "pos %f %f %f", p.x, p.y, p.z);
 	}
 
-#if 1
-	for (float i = 0; i < 10; i++) {
-		float d = 40;
+}
+static void
+game_render(void)
+{
+	struct texture *depth = &g_state->depth;
+	sys_render_push(&(struct render_entry){
+			.shader = SHADER_TEST,
+			.mesh = MESH_FLOOR,
+			.scale = {1.0, 1.0, 1.0},
+			.cull = 0,
+			.position = g_state->player_pos,
+			.rotation = QUATERNION_IDENTITY,
+			.texture = {
+				{.name = "shadowmap", .res_id = INTERNAL_TEXTURE, .tex = depth }
+			},
+		});
+
+	struct map *map = &g_state->map;
+	for (size_t i = 0; i < ARRAY_LEN(map->rocks); i++) {
+		vec3 scale = { map->rocks[i].scale, map->rocks[i].scale, map->rocks[i].scale};
 		sys_render_push(&(struct render_entry){
 				.shader = SHADER_TEST,
-				.mesh = MESH_ROCK_TEST,
-				.scale = {1,1,1},
-				.position = {d*sin((i/5.) * 3.1415),-0.5,d*cos((i/5.) * 3.1415)},
-				.rotation = QUATERNION_IDENTITY,
-				.color = (vec3){1.0,0,0},
+				.mesh = MESH_ROCK_PILAR,
+				.scale = scale,
+				.cull = 1,
+				.position = map->rocks[i].pos,
+				.rotation = map->rocks[i].rot,
+				.texture = {
+					{.name = "shadowmap", .res_id = INTERNAL_TEXTURE, .tex = depth }
+				},
 			});
 	}
-#endif
+	for (size_t i = 0; i < ARRAY_LEN(map->small); i++) {
+		vec3 scale = { map->small[i].scale, map->small[i].scale, map->small[i].scale};
+		sys_render_push(&(struct render_entry){
+				.shader = SHADER_TEST,
+				.mesh = MESH_ROCK_SMALL,
+				.scale = scale,
+				.cull = 1,
+				.position = map->small[i].pos,
+				.rotation = map->small[i].rot,
+				.texture = {
+					{.name = "shadowmap", .res_id = INTERNAL_TEXTURE, .tex = depth }
+				},
+			});
+	}
+	sys_render_push(&(struct render_entry){
+			.shader = SHADER_SKY,
+			.mesh = MESH_QUAD,
+			.scale = {1, 1, 1},
+			.position = {0, 0, 0},
+			.color = { 0 },
+			.rotation = QUATERNION_IDENTITY,
+		});
 
 }
 
@@ -369,7 +512,7 @@ mouse_in(int x, int y, int w, int h)
 static int
 button(int x, int y, const char *txt)
 {
-	int l = 20;//strlen(txt);
+	int l = 30;//strlen(txt);
 	int c;
 	int w = l*14;
 	int h = 18;
@@ -382,26 +525,124 @@ button(int x, int y, const char *txt)
 	}
 	gui_text(x, y, txt, c);
 
-	return mouse_in(x, y, w, h) && mouse_button_pressed(g_input, 0);
+	return mouse_in(x, y, w, h) && on_mouse_clic(0);
+}
+
+static int
+enable(int x, int y, const char *txt, int en)
+{
+	int l = 30;//strlen(txt);
+	int c;
+	int w = l*14;
+	int h = 18;
+
+	if (mouse_in(x, y, w, h)) {
+		c = gui_color(255, 255, 255);
+		gui_fill(x, y, w, h, gui_color(18, 18, 18));
+	} else {
+		c = gui_color(128, 128, 128);
+	}
+	gui_text(x, y, txt, c);
+	gui_fill(x+w-h, y, h, h, c);
+	if (en)
+		gui_fill(x+w-h+2, y+2, h-4, h-4, gui_color(128, 128, 128));
+	else
+		gui_fill(x+w-h+2, y+2, h-4, h-4, gui_color(18, 18, 18));
+
+	return mouse_in(x, y, w, h) && on_mouse_clic(0);
+}
+
+static float
+slider(int x, int y, const char *txt, float min, float max, float val)
+{
+	int l = 30;//strlen(txt);
+	int c;
+	int w = l*14;
+	int h = 18;
+
+	if (mouse_in(x, y, w, h)) {
+		c = gui_color(255, 255, 255);
+		gui_fill(x, y, w, h, gui_color(18, 18, 18));
+	} else {
+		c = gui_color(128, 128, 128);
+	}
+	gui_text(x, y, txt, c);
+	gui_fill(x+w/2, y, w/2, h, c);
+	gui_fill(x+w/2+2, y+2, w/2-4, h-4, gui_color(18, 18, 18));
+	if (mouse_in(x+w/2+2, y+2, w/2-4, h-4) && is_mouse_clic(0)) {
+		val = min + (max-min) * ((g_input->xpos - (x+w/2+2)) / (float)(w/2-4));
+	}
+
+	if (val < min) val = min;
+	if (val > max) val = max;
+	float per = (val - min)/(max - min);
+
+	gui_fill(x+w/2+2, y+2, per*(w/2-4), h-4, gui_color(180, 18, 18));
+//	gui_fill(x+w+2, y, h, h, c);
+//	gui_fill(x+w-h*n+2, y+2, h-4, h-4, gui_color(128, 128, 128));
+	if (mouse_in(x, y, w, h))
+		gui_printf(x+w/2+2, y+2, "%f", val);
+	return val;
 }
 
 static void
-game_menu(void)
+game_menu_main(void)
 {
 	int i = 0;
 	int w = g_input->width;
-	int y = g_input->height / 2;;
+	int y = g_input->height / 2;
 	w = 64;
 
 	gui_text(w, y + i++ * 32, "HARVEST LD52", gui_color(255, 255, 255));
 	if (button(w, y + i++ * 32, "PLAY"))
 		g_state->next_state = GAME_PLAY;
 	if (button(w, y + i++ * 32, "OPTIONS"))
-		;
+		g_state->menu = MENU_OPTIONS;
 	i++;
 	if (button(w, y + i++ * 32, "EXIT"))
 		io.close();
-	gui_fill(g_input->xpos, g_input->ypos, 2, 2, gui_color(255, 255, 255));
+	if (on_pressed(KEY_ESCAPE))
+		g_state->next_state = GAME_PLAY;
+}
+
+static void
+game_menu_options(void)
+{
+	int i = 0;
+	int l = 30*14;
+	int w = (g_input->width - l) / 2;
+	int y = g_input->height / 2;
+
+	if (button(64, y + i++ * 32, "EXIT"))
+		g_state->menu = MENU_MAIN;
+	if (on_pressed(KEY_ESCAPE))
+		g_state->menu = MENU_MAIN;
+	i = 1;
+	button(w, i++ * 32, "INPUT");
+	if (enable(w, i++ * 32, "inv Y", g_state->options.mouse_inv_y))
+		g_state->options.mouse_inv_y = !g_state->options.mouse_inv_y;
+
+	g_state->options.mouse_speed = slider(w, i++ * 32, "speed", 0.0001, 0.005,
+					      g_state->options.mouse_speed);
+
+	button(w, i++ * 32, "SOUND");
+	if (enable(w, i++ * 32, "mute", g_state->options.audio_mute))
+		g_state->options.audio_mute = !g_state->options.audio_mute;
+	g_state->options.main_volume = slider(w, i++ * 32, "volume", 0.0, 1.0,
+					      g_state->options.main_volume);
+}
+
+static void
+game_menu(void)
+{
+	switch (g_state->menu) {
+	case MENU_MAIN:
+		game_menu_main();
+		break;
+	case MENU_OPTIONS:
+		game_menu_options();
+		break;
+	}
 }
 
 static void
@@ -414,10 +655,10 @@ game_main(void)
 		io.show_cursor(!g_state->mouse_grabbed);
 		break;
 	case GAME_MENU:
+		camera_set(&g_state->player_cam, (vec3){80.631607, 0.872238, 7.466835}, (quaternion){ {0.172121, -0.341403, -0.063745}, -0.921831});
 		game_menu();
-		gui_text(0, 32, "menu", gui_color(250, 250, 250));
-		if (on_pressed(KEY_ESCAPE))
-			g_state->next_state = GAME_PLAY;
+		if (g_state->debug)
+			gui_text(0, 32, "menu", gui_color(250, 250, 250));
 		break;
 	case GAME_PLAY:
 		game_play();
@@ -425,7 +666,7 @@ game_main(void)
 			g_state->next_state = GAME_MENU;
 		break;
 	}
-
+	game_render();
 	if (g_state->state == g_state->next_state)
 		return;
 
@@ -459,6 +700,7 @@ show_fps(double f) {
 	tf /= ARRAY_LEN(fps);
 	gui_printf(x+ARRAY_LEN(fps), y, "%2.0ffps", tf);
 }
+
 static void
 show_ms(double f) {
 	static float fps[64];
@@ -475,6 +717,26 @@ show_ms(double f) {
 	}
 	tf /= ARRAY_LEN(fps);
 	gui_printf(x+ARRAY_LEN(fps), y, "%2.0fms", tf);
+}
+
+static void
+do_audio(struct audio *audio)
+{
+	static size_t seq_pos;
+	float vol = g_state->options.main_volume;
+	size_t i;
+	struct wav *snd = game_get_wav(g_asset, ASSET_KEY_COUNT);
+
+	if (g_state->options.audio_mute)
+		vol = 0.0;
+
+	for (i = 0; i < audio->size; i++) {
+		struct sample sample;
+		int16_t v = ((int16_t *)snd->audio_data)[seq_pos++ % snd->extras.nb_samples];
+		sample.r = v / (float)0x1000 * vol;
+		sample.l = v / (float)0x1000 * vol;
+		audio->buffer[i] = sample;
+	}
 }
 
 void
@@ -497,9 +759,8 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	if (on_pressed('X')) {
 		g_state->debug = !g_state->debug;
 	}
-	if (on_pressed(KEY_ESCAPE)) {
-		g_state->mouse_grabbed = !g_state->mouse_grabbed;
-		io.show_cursor(!g_state->mouse_grabbed);
+	if (on_pressed('R')) {
+		game_gen_map(&g_state->map);
 	}
 	if (on_pressed('Z')) {
 		g_state->flycam = !g_state->flycam;
@@ -515,11 +776,18 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	/* do update here */
 	game_main();
 
-	if (g_state->flycam || 1) {
+	if (g_state->flycam) {
 		g_state->cam = g_state->fly_cam;
 	} else {
 		g_state->cam = g_state->player_cam;
 	}
+	vec3 pos = g_state->player_pos;
+	light_set_pos(&g_state->light, (vec3){-13.870439, 27.525631, -11.145432});
+	light_look_at(&g_state->light, VEC3_ZERO, VEC3_AXIS_Y);
+	pos = vec3_add(pos, vec3_mult(-50, light_get_dir(&g_state->light)));
+	light_set_pos(&g_state->light, pos);
+	dbg_light_mark(&g_state->light);
+
 	sys_render_exec();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -527,8 +795,8 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	glDisable(GL_CULL_FACE);
 	show_fps(1.0/g_input->dt);
 	show_ms(io.get_time() - t1);
-	gui_printf(500, 500, "W: %s", is_pressed('W') ? "yes" : "no");
-	gui_draw();
 
+	gui_draw();
+	do_audio(audio);
 	game_asset_poll(g_asset);
 }

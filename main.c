@@ -100,6 +100,8 @@ swap_input(struct input *new, struct input *buf)
 	buf->yinc = 0;
 	for (i = 0; i < ARRAY_LEN(buf->keys); i++)
 		buf->keys[i] &= ~KEY_CHANGED;
+	for (i = 0; i < ARRAY_LEN(buf->buttons); i++)
+		buf->buttons[i] &= ~KEY_CHANGED;
 }
 
 static void
@@ -196,7 +198,7 @@ mouse_button_event(unsigned int button, int act)
 	struct input *input = &game_input_next;
 
 	if (button < ARRAY_LEN(input->buttons))
-		input->buttons[button] = act;
+		input->buttons[button] = act | KEY_CHANGED;
 }
 
 static void

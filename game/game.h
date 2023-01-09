@@ -53,6 +53,18 @@ struct listener {
 	vec3 left;
 };
 
+struct ent {
+	vec3 pos;
+	float scale;
+	float radius;
+	quaternion rot;
+};
+
+struct map {
+	struct ent rocks[4096];
+	struct ent small[4096];
+};
+
 struct game_state {
 	int width;
 	int height;
@@ -65,6 +77,18 @@ struct game_state {
 		GAME_PLAY,
 		GAME_PAUSE,
 	} state, next_state;
+	enum {
+		MENU_MAIN,
+		MENU_OPTIONS,
+	} menu;
+
+	struct options {
+		int mouse_inv_y;
+		float mouse_speed; // 0.002;
+		float main_volume;
+		int audio_mute;
+	} options;
+
 	int debug;
 	struct camera sun;
 
@@ -81,6 +105,9 @@ struct game_state {
 
 	int mouse_grabbed;
 	struct gui_state *gui;
+
+	struct map map;
+
 };
 
 extern struct game_state *g_state;
@@ -98,4 +125,16 @@ static inline int
 on_pressed(int key)
 {
 	return on_key_pressed(g_input, key);
+}
+
+static inline int
+is_mouse_clic(int btn)
+{
+	return is_mouse_button_pressed(g_input, btn);
+}
+
+static inline int
+on_mouse_clic(int btn)
+{
+	return on_mouse_button_pressed(g_input, btn);
 }
