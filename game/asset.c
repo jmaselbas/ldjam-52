@@ -66,7 +66,7 @@ static struct res_entry resfiles[ASSET_KEY_COUNT] = {
 
 	//[MESH_TEST]  = { MESH_OBJ, .file = "res/test.obj", },
 	[DEBUG_SHADER_TEXTURE]  = { SHADER, .vert = "res/orth.vert", .frag = "res/texture.frag", },
-	[WAV_THEME] = { SOUND_WAV, .file = "res/audio/ld52_theme48.wav" },
+	[WAV_THEME] = { SOUND_OGG, .file = "res/audio/ld52_theme48.ogg" },
 	[WAV_CLICK] = { SOUND_WAV, .file = "res/audio/clic.wav" },
 };
 
