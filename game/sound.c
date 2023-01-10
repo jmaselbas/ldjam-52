@@ -68,7 +68,8 @@ do_audio(struct audio *audio)
 	struct listener nxt;
 	size_t i, j;
 	float l, r;
-	float vol = g_state->options.audio_mute ? 0.0 :
+	static float lvol;
+	float vol, nvol = g_state->options.audio_mute ? 0.0 :
 		g_state->options.main_volume;
 	struct sound *s;
 	struct listener li;
@@ -89,6 +90,7 @@ do_audio(struct audio *audio)
 		for (j = 0; j < audio->size; j++) {
 			const float f = j / (float)audio->size;
 			li = listener_lerp(cur, nxt, f);
+			vol = mix(lvol, nvol, f);
 			lrcv = sound_spatializer(s, &li);
 
 			l = step_sampler(&s->sampler);
@@ -107,8 +109,10 @@ do_audio(struct audio *audio)
 
 		}
 	}
-	if (audio->size > 0)
+	if (audio->size > 0) {
 		g_state->cur_listener = nxt;
+		lvol = nvol;
+	}
 }
 
 
