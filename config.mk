@@ -4,7 +4,6 @@ VERSION = 0.52.3
 # Customize below to fit your system
 CONFIG_JACK=n
 CONFIG_PULSE=n
-CONFIG_MINIAUDIO=n
 CONFIG_SDL_AUDIO=y
 
 # Install paths
@@ -39,11 +38,9 @@ LIBS += -lm
 # Config specific flags
 CFLAGS-$(CONFIG_JACK) += -DCONFIG_JACK
 CFLAGS-$(CONFIG_PULSE) += -DCONFIG_PULSE
-CFLAGS-$(CONFIG_MINIAUDIO) += -DCONFIG_MINIAUDIO
 CFLAGS-$(CONFIG_SDL_AUDIO) += -DCONFIG_SDL_AUDIO
 LIBS-$(CONFIG_JACK) += -lpthread -ljack
 LIBS-$(CONFIG_PULSE) += -lpthread -lpulse
-LIBS-$(CONFIG_MINIAUDIO) += -lpthread
 
 LIBS += $(LIBS-y)
 CFLAGS += $(CFLAGS-y)

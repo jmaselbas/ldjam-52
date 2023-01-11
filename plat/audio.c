@@ -40,12 +40,6 @@ extern struct audio_io *pulse_io;
 #define pulse_io NULL
 #endif
 
-#ifdef CONFIG_MINIAUDIO
-extern struct audio_io *miniaudio_io;
-#else
-#define miniaudio_io NULL
-#endif
-
 #ifdef CONFIG_SDL_AUDIO
 extern struct audio_io *sdl_audio_io;
 #else
@@ -90,8 +84,6 @@ audio_init(struct audio_state *audio)
 		audio_io = jack_io;
 	if (!audio_io && pulse_io)
 		audio_io = pulse_io;
-	if (!audio_io && miniaudio_io)
-		audio_io = miniaudio_io;
 	if (!audio_io && sdl_audio_io)
 		audio_io = sdl_audio_io;
 	if (!audio_io)
