@@ -4,75 +4,76 @@
 #include "wav.h"
 
 void
-sampler_init(struct sampler *sampler, struct wav *wav, enum pb_mode mode, int autoplay)
+sampler_init(struct sampler *s, struct wav *wav, int loop, int autoplay)
 {
-	sampler->wav      = wav;
-	sampler->state    = STOP;
-	sampler->pb_start = 0;
-	sampler->pb_end   = wav->extras.nb_samples;
-	sampler->pb_head  = 0;
-	if (mode == LOOP)
-		sampler->loop_on = 1;
+	s->wav      = wav;
+	s->state    = STOP;
+	s->beg      = 0;
+	s->end      = wav->extras.nb_samples;
+	s->cur      = s->beg;
+	if (loop)
+		s->loop = 1;
 	else
-		sampler->loop_on = 0;
-	sampler->loop_start = 0;
-	sampler->loop_end  = sampler->pb_end;
+		s->loop = 0;
+	s->loop_beg = 0;
+	s->loop_end = s->end;
 	if (autoplay)
-		sampler->trig_on = 1;
+		s->trig = 1;
 	else
-		sampler->trig_on = 0;
-	sampler->vol = 1;
+		s->trig = 0;
+	s->vol = 1;
 }
 
 static int
-is_pb_fini(struct sampler *sampler)
+pb_fini(struct sampler *s)
 {
-	return (sampler->pb_head >= sampler->wav->extras.nb_samples);
+	return (s->cur >= s->wav->extras.nb_samples);
 }
 
 static int
-is_retrigged(struct sampler *sampler)
+is_retrigged(struct sampler *s)
 {
-	return (sampler->trig_on);
+	return (s->trig);
 }
 
-sample step_sampler(struct sampler *sampler)
+sample
+step_sampler(struct sampler *s)
 {
 	int16_t *samples;
 	float vol;
-	size_t offset;
-	float ret = 0;
+	size_t off;
+	sample ret = 0;
 
-	if (is_retrigged(sampler)) {
-		sampler->trig_on = 0;
-		switch (sampler->state) {
+	if (is_retrigged(s)) {
+		s->trig = 0;
+		switch (s->state) {
 			case PLAY:
-				sampler->pb_head = sampler->pb_start;
+				s->cur = s->beg;
 				break;
 			case STOP:
-				sampler->state = PLAY;
+				s->state = PLAY;
 				break;
 		}
 	}
 
-	if(is_pb_fini(sampler)) {
-		if (sampler->loop_on) {
-			sampler->pb_head = sampler->loop_start;
+	if(pb_fini(s)) {
+		if (s->loop) {
+			s->cur = s->loop_beg;
 		} else {
-			sampler->state = STOP;
-			sampler->pb_head = sampler->pb_start;
+			s->state = STOP;
+			s->cur = s->beg;
 		}
 	}
 
-	switch(sampler->state){
+	switch(s->state){
 	case STOP:
 		ret = 0;
 		break;
 	case PLAY:
-		offset = sampler->pb_head++;
-		vol = sampler->vol;
-		samples = (int16_t *) sampler->wav->audio_data;
-		ret = vol * (float) (samples[offset] / (float) INT16_MAX);
+		off = s->cur++;
+		vol = s->vol;
+		samples = (int16_t *) s->wav->audio_data;
+		ret = vol * (float) (samples[off] / (float) INT16_MAX);
 		break;
 	}
 	return ret;

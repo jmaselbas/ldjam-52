@@ -135,7 +135,7 @@ game_init(struct game_memory *game_memory)
 
 	game_gen_map(&g_state->map);
 	g_state->gui = gui_init(malloc(gui_size()));
-	sound_init(&g_state->sound[0], game_get_wav(g_asset, WAV_THEME), LOOP, 1, 0, (vec3){0.,0.,0.});
+	sound_init(&g_state->sound[0], game_get_wav(g_asset, WAV_THEME), LOOP, TRIG, 0, (vec3){0.,0.,0.});
 }
 
 void

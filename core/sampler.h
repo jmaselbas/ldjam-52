@@ -2,33 +2,23 @@
 
 #include "audio.h"
 
-enum sampler_state{
-	STOP,
-	PLAY,
-};
-
-enum pb_mode{
-	ONE,
-	LOOP,
-};
+#define STOP 0
+#define PLAY 1
+#define LOOP 1
+#define TRIG 1
 
 struct sampler {
+	int         state;
 	struct wav *wav;
-	enum sampler_state state;
-	size_t pb_start;
-	size_t pb_end;
-	size_t pb_head; /* playhead position */
-
-	size_t loop_start;
-	size_t loop_end;
-	int    loop_on;
-
-	/* Trig */
-	unsigned char trig_on; /* input trig signal */
-
-	/* Amp */
-	float vol;
+	size_t      beg;
+	size_t      end;
+	size_t      cur;
+	size_t      loop_beg;
+	size_t      loop_end;
+	int         loop;
+	int         trig;
+	float       vol;
 };
 
-void sampler_init(struct sampler *sampler, struct wav *wav, enum pb_mode mode, int autoplay);
-sample step_sampler(struct sampler *sampler);
+void sampler_init(struct sampler *s, struct wav *wav, int loop, int trig);
+sample step_sampler(struct sampler *s);

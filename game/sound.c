@@ -53,16 +53,16 @@ listener_lerp(struct listener a, struct listener b, float x)
 }
 
 void
-sound_init(struct sound *snd, struct wav *wav, enum pb_mode mode, int autoplay,
+sound_init(struct sound *s, struct wav *wav, int mode, int trig,
 	int is_positional, vec3 pos)
 {
-	snd->pos = pos;
-	snd->is_positional = is_positional;
-	sampler_init(&snd->sampler, wav, mode, autoplay);
+	s->pos = pos;
+	s->is_positional = is_positional;
+	sampler_init(&s->sampler, wav, mode, trig);
 }
 
 void
-do_audio(struct audio *audio)
+do_audio(struct audio *a)
 {
 	struct listener cur;
 	struct listener nxt;
@@ -77,9 +77,9 @@ do_audio(struct audio *audio)
 	cur = g_state->cur_listener;
 	nxt = g_state->nxt_listener;
 
-	for (i = 0; i < audio->size; i++) {
-		audio->buffer[i].l = 0;
-		audio->buffer[i].r = 0;
+	for (i = 0; i < a->size; i++) {
+		a->buffer[i].l = 0;
+		a->buffer[i].r = 0;
 	}
 
 	/* Note: listener interpolation seems to be working
@@ -87,8 +87,8 @@ do_audio(struct audio *audio)
 	 */
 	for (i=0; i < NB_SOUND; i++) {
 		s = &g_state->sound[i];
-		for (j = 0; j < audio->size; j++) {
-			const float f = j / (float)audio->size;
+		for (j = 0; j < a->size; j++) {
+			const float f = j / (float)a->size;
 			li = listener_lerp(cur, nxt, f);
 			vol = mix(lvol, nvol, f);
 			lrcv = sound_spatializer(s, &li);
@@ -100,16 +100,16 @@ do_audio(struct audio *audio)
 				r = step_sampler(&s->sampler);
 			}
 			if (s->is_positional){
-				audio->buffer[j].l += ((l * lrcv.l + l *lrcv.c)*lrcv.v)*vol;
-				audio->buffer[j].r += ((r * lrcv.r + r *lrcv.c)*lrcv.v)*vol;
+				a->buffer[j].l += ((l * lrcv.l + l *lrcv.c)*lrcv.v)*vol;
+				a->buffer[j].r += ((r * lrcv.r + r *lrcv.c)*lrcv.v)*vol;
 			} else {
-				audio->buffer[j].l += l * vol;
-				audio->buffer[j].r += r * vol;
+				a->buffer[j].l += l * vol;
+				a->buffer[j].r += r * vol;
 			}
 
 		}
 	}
-	if (audio->size > 0) {
+	if (a->size > 0)
 		g_state->cur_listener = nxt;
 		lvol = nvol;
 	}
