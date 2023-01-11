@@ -109,7 +109,7 @@ do_audio(struct audio *a)
 
 		}
 	}
-	if (a->size > 0)
+	if (a->size > 0) {
 		g_state->cur_listener = nxt;
 		lvol = nvol;
 	}
