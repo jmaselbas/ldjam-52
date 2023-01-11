@@ -1,7 +1,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include "game.h"
 #include "asset.h"
 #include "render.h"
 #include "sound.h"
@@ -17,7 +16,7 @@ struct lrcv {
 };
 
 static struct lrcv
-sound_spatializer(struct sound *s, struct listener *li)
+sound_get_panning(struct sound *s, struct listener *li)
 {
 	vec3 sound_pos = s->pos;
 	vec3 player_pos = li->pos;
@@ -40,18 +39,6 @@ sound_spatializer(struct sound *s, struct listener *li)
 	};
 }
 
-static struct listener
-listener_lerp(struct listener a, struct listener b, float x)
-{
-	struct listener r;
-
-	r.pos = vec3_lerp(a.pos, b.pos, x);
-	r.dir = vec3_lerp(a.dir, b.dir, x);
-	r.left = vec3_lerp(a.left, b.left, x);
-
-	return r;
-}
-
 void
 sound_init(struct sound *s, struct wav *wav, int mode, int trig,
 	int is_positional, vec3 pos)
@@ -61,58 +48,36 @@ sound_init(struct sound *s, struct wav *wav, int mode, int trig,
 	sampler_init(&s->sampler, wav, mode, trig);
 }
 
-void
-do_audio(struct audio *a)
+int
+sound_is_positional(struct sound *s)
 {
-	struct listener cur;
-	struct listener nxt;
-	size_t i, j;
-	float l, r;
-	static float lvol;
-	float vol, nvol = g_state->options.audio_mute ? 0.0 :
-		g_state->options.main_volume;
-	struct sound *s;
-	struct listener li;
-	struct lrcv lrcv;
-	cur = g_state->cur_listener;
-	nxt = g_state->nxt_listener;
-
-	for (i = 0; i < a->size; i++) {
-		a->buffer[i].l = 0;
-		a->buffer[i].r = 0;
-	}
-
-	/* Note: listener interpolation seems to be working
-	 * well with buffers of 1024 frames
-	 */
-	for (i=0; i < NB_SOUND; i++) {
-		s = &g_state->sound[i];
-		for (j = 0; j < a->size; j++) {
-			const float f = j / (float)a->size;
-			li = listener_lerp(cur, nxt, f);
-			vol = mix(lvol, nvol, f);
-			lrcv = sound_spatializer(s, &li);
-
-			l = step_sampler(&s->sampler);
-			if (s->sampler.wav->header.channels == 1) {
-				r = l;
-			} else {
-				r = step_sampler(&s->sampler);
-			}
-			if (s->is_positional){
-				a->buffer[j].l += ((l * lrcv.l + l *lrcv.c)*lrcv.v)*vol;
-				a->buffer[j].r += ((r * lrcv.r + r *lrcv.c)*lrcv.v)*vol;
-			} else {
-				a->buffer[j].l += l * vol;
-				a->buffer[j].r += r * vol;
-			}
-
-		}
-	}
-	if (a->size > 0) {
-		g_state->cur_listener = nxt;
-		lvol = nvol;
-	}
+	return s->is_positional;
 }
 
+struct frame
+sound_pos_step(struct sound *s, struct listener *lis)
+{
+	struct frame out;
+	struct lrcv lrcv;
+	lrcv = sound_get_panning(s, lis);
+	out = sound_step(s);
+	out.l = ((out.l * lrcv.l + out.l *lrcv.c)*lrcv.v);
+	out.r = ((out.r * lrcv.r + out.r *lrcv.c)*lrcv.v);
+	return out;
+}
 
+struct frame
+sound_step(struct sound *s)
+{
+	struct frame out;
+	sample l, r;
+	l = step_sampler(&s->sampler);
+	if (s->sampler.wav->header.channels == 1) {
+		r = l;
+	} else {
+		r = step_sampler(&s->sampler);
+	}
+	out.l = l;
+	out.r = r;
+	return out;
+}

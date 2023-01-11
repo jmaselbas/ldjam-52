@@ -11,7 +11,6 @@
 #include "entity.h"
 #include "render.h"
 #include "text.h"
-#include "sound.h"
 
 struct game_state *g_state;
 struct game_asset *g_asset;
@@ -780,6 +779,61 @@ audio_set_listener(vec3 pos, vec3 dir, vec3 left)
 	g_state->nxt_listener.pos = pos;
 	g_state->nxt_listener.dir = dir;
 	g_state->nxt_listener.left = left;
+}
+
+static struct listener
+listener_lerp(struct listener a, struct listener b, float x)
+{
+	struct listener r;
+
+	r.pos = vec3_lerp(a.pos, b.pos, x);
+	r.dir = vec3_lerp(a.dir, b.dir, x);
+	r.left = vec3_lerp(a.left, b.left, x);
+
+	return r;
+}
+
+void
+do_audio(struct audio *a)
+{
+	size_t i, j;
+	struct frame f;
+	static float lvol;
+	float x;
+	float vol, nvol = g_state->options.audio_mute ? 0.0 :
+		g_state->options.main_volume;
+	struct sound *s;
+	struct listener cur;
+	struct listener nxt;
+	struct listener lis;
+
+	for (i = 0; i < a->size; i++) {
+		a->buffer[i].l = 0;
+		a->buffer[i].r = 0;
+	}
+
+	cur = g_state->cur_listener;
+	nxt = g_state->nxt_listener;
+
+	for (i=0; i < NB_SOUND; i++) {
+		s = &g_state->sound[i];
+		for (j = 0; j < a->size; j++) {
+			x = j / (float)a->size;
+			lis = listener_lerp(cur, nxt, x);
+			if (sound_is_positional(s))
+				f = sound_pos_step(s, &lis);
+			else
+				f = sound_step(s);
+
+			vol = mix(lvol, nvol, x);
+			a->buffer[j].l += f.l * vol;
+			a->buffer[j].r += f.r * vol;
+		}
+	}
+	if (a->size > 0) {
+		g_state->cur_listener = nxt;
+		lvol = nvol;
+	}
 }
 
 void

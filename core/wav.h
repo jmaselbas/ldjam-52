@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stdint.h>
 /* All sizes in Byte */
 struct header {
 	unsigned char riff_str[4];

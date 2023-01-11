@@ -41,9 +41,11 @@ We call sound, a source of audio in the game.
 Sounds can be localized in space (positionnal) or not.
 Positionnal sounds are spacialized using Mid/side panning.
 
-
 For now sounds are only wav files being played via the help
 of sample players (samplers).
+
+Stepping a sound one time produces a single stereo audio
+frame ([sample_left, sample_right]).
 
 * Sampler
 

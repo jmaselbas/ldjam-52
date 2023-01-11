@@ -48,12 +48,6 @@ void sys_init(struct system *sys, struct memory_zone zone);
 #include "gui.h"
 #include "sound.h"
 
-struct listener {
-	vec3 pos;
-	vec3 dir;
-	vec3 left;
-};
-
 struct ent {
 	vec3 pos;
 	float scale;

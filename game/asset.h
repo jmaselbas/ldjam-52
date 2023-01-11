@@ -1,4 +1,6 @@
 #pragma once
+#include <time.h>
+#include "core/util.h"
 
 enum asset_key {
 	DEBUG_MESH_CROSS,

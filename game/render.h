@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/math.h"
 #include "asset.h"
 
 void render_bind_shader(struct shader *shader);
