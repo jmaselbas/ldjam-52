@@ -1,10 +1,4 @@
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include "asset.h"
-#include "render.h"
 #include "sound.h"
-#include "core/wav.h"
 
 struct lrcv {
 	float l;

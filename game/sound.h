@@ -1,6 +1,7 @@
 #pragma once
 #include "core/sampler.h"
 #include "core/math.h"
+#include "core/wav.h"
 
 struct listener {
 	vec3 pos;
