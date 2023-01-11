@@ -6,8 +6,6 @@
 #include "sound.h"
 #include "core/wav.h"
 
-extern struct game_state *g_state;
-
 struct lrcv {
 	float l;
 	float r;
