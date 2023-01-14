@@ -40,9 +40,10 @@ We call sound, a source of audio in the game.
 
 Sounds can be localized in space (positionnal) or not.
 Positionnal sounds are spacialized using Mid/side panning.
+or hrtf filtering.
 
 For now sounds are only wav files being played via the help
-of sample players (samplers).
+of sample players (samplers). There is no in game synthesis.
 
 Stepping a sound one time produces a single stereo audio
 frame ([sample_left, sample_right]).
@@ -54,10 +55,7 @@ The sampler allows playback control:
 	- Loop
 and volume control.
 
-Stepping one time a sampler produces one output sample:
+Stepping one time a sampler produces one output frame:
 - 0 if playback is stopped
-- the sample value at current playback position otherwise
-
-Output sample is converted from 16 bit integer
-to a float value between 0 and 1.
+- the frame at current playback position otherwise
 

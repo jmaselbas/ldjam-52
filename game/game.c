@@ -134,7 +134,19 @@ game_init(struct game_memory *game_memory)
 
 	game_gen_map(&g_state->map);
 	g_state->gui = gui_init(malloc(gui_size()));
-	sound_init(&g_state->sound[0], game_get_wav(g_asset, WAV_THEME), LOOP, TRIG, 0, (vec3){0.,0.,0.});
+	sound_init(&g_state->sound[0], game_get_wav(g_asset, WAV_DRONE_BASS), LOOP, TRIG, 1, (vec3){10.,0.,0. });
+	sound_init(&g_state->sound[1], game_get_wav(g_asset, WAV_DRONE_BELL), LOOP, TRIG, 1, (vec3){0.,0.,-20.});
+	sound_init(&g_state->sound[2], game_get_wav(g_asset, WAV_DRONE_HI1), LOOP, TRIG, 1, (vec3){10.,0.,52.});
+	sound_init(&g_state->sound[3], game_get_wav(g_asset, WAV_DRONE_HI2), LOOP, TRIG, 1, (vec3){50.,0.,20.});
+#if 0
+	sound_init(&g_state->sound[0], game_get_wav(g_asset, WAV_THEME), LOOP, TRIG, 1, (vec3){0.,0.,0.});
+	sound_init(&g_state->sound[4], game_get_wav(g_asset, WAV_DRONE_LAR), LOOP, TRIG, 1, (vec3){105.,0.,10.});
+	sound_init(&g_state->sound[5], game_get_wav(g_asset, WAV_DRONE_RY1), LOOP, TRIG, 1, (vec3){203.,0.,25.});
+	sound_init(&g_state->sound[6], game_get_wav(g_asset, WAV_DRONE_RY2), LOOP, TRIG, 1, (vec3){10.,0.,120.});
+	sound_init(&g_state->sound[7], game_get_wav(g_asset, WAV_DRONE_RY3), LOOP, TRIG, 1, (vec3){15.,0.,200. });
+#endif
+	g_state->cur_listener = g_state->cam;
+	g_state->cur_listener = g_state->cam;
 }
 
 void
@@ -773,26 +785,6 @@ show_ms(double f) {
 	gui_printf(x+ARRAY_LEN(fps), y, "%2.0fms", tf);
 }
 
-static void
-audio_set_listener(vec3 pos, vec3 dir, vec3 left)
-{
-	g_state->nxt_listener.pos = pos;
-	g_state->nxt_listener.dir = dir;
-	g_state->nxt_listener.left = left;
-}
-
-static struct listener
-listener_lerp(struct listener a, struct listener b, float x)
-{
-	struct listener r;
-
-	r.pos = vec3_lerp(a.pos, b.pos, x);
-	r.dir = vec3_lerp(a.dir, b.dir, x);
-	r.left = vec3_lerp(a.left, b.left, x);
-
-	return r;
-}
-
 void
 do_audio(struct audio *a)
 {
@@ -803,31 +795,33 @@ do_audio(struct audio *a)
 	float vol, nvol = g_state->options.audio_mute ? 0.0 :
 		g_state->options.main_volume;
 	struct sound *s;
-	struct listener cur;
-	struct listener nxt;
-	struct listener lis;
+	struct camera lis;
+	struct camera cur;
+	struct camera nxt;
+	int sts;
 
 	for (i = 0; i < a->size; i++) {
 		a->buffer[i].l = 0;
 		a->buffer[i].r = 0;
 	}
-
 	cur = g_state->cur_listener;
 	nxt = g_state->nxt_listener;
-
 	for (i=0; i < NB_SOUND; i++) {
 		s = &g_state->sound[i];
 		for (j = 0; j < a->size; j++) {
-			x = j / (float)a->size;
-			lis = listener_lerp(cur, nxt, x);
-			if (sound_is_positional(s))
-				f = sound_pos_step(s, &lis);
-			else
-				f = sound_step(s);
-
+			x  = (float) j / (float) a->size;
+			lis = camera_lerp(cur, nxt, x);
+			if (sound_is_positional(s)) {
+				sts = sound_update_hrtf(s, &lis);
+				if (sts != 0)
+					perror("couldn't find taps for sound");
+			}
+			sts = sound_get_frame(s, &f);
+			if (sts != 0)
+				perror("couldn't get sound frame");
 			vol = mix(lvol, nvol, x);
-			a->buffer[j].l += f.l * vol;
-			a->buffer[j].r += f.r * vol;
+			a->buffer[j].l += f.l;
+			a->buffer[j].r += f.r;
 		}
 	}
 	if (a->size > 0) {
@@ -878,6 +872,7 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	} else {
 		g_state->cam = g_state->player_cam;
 	}
+	g_state->nxt_listener = g_state->cam;
 	vec3 pos = g_state->cam.position;
 	light_set_pos(&g_state->light, (vec3){-13.870439, 27.525631, -11.145432});
 	light_look_at(&g_state->light, VEC3_ZERO, VEC3_AXIS_Y);
@@ -886,9 +881,7 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	dbg_light_mark(&g_state->light);
 
 	sys_render_exec();
-	audio_set_listener(g_state->cam.position,
-                               vec3_normalize(camera_get_dir(&g_state->cam)),
-                               vec3_normalize(camera_get_left(&g_state->cam)));
+	//set audio listening position
 	do_audio(audio);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);

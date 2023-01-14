@@ -68,6 +68,14 @@ static struct res_entry resfiles[ASSET_KEY_COUNT] = {
 	[DEBUG_SHADER_TEXTURE]  = { SHADER, .vert = "res/orth.vert", .frag = "res/texture.frag", },
 	[WAV_THEME] = { SOUND_OGG, .file = "res/audio/ld52_theme48.ogg" },
 	[WAV_CLICK] = { SOUND_WAV, .file = "res/audio/clic.wav" },
+	[WAV_DRONE_BASS] = { SOUND_OGG, .file = "res/audio/drone_bass.ogg" },
+	[WAV_DRONE_BELL] = { SOUND_OGG, .file = "res/audio/drone_bells.ogg" },
+	[WAV_DRONE_HI1] = { SOUND_OGG, .file = "res/audio/drone_highpitch_1.ogg" },
+	[WAV_DRONE_HI2] = { SOUND_OGG, .file = "res/audio/drone_highpitch_2.ogg" },
+	[WAV_DRONE_LAR] = { SOUND_OGG, .file = "res/audio/drone_larsen.ogg" },
+	[WAV_DRONE_RY1] = { SOUND_OGG, .file = "res/audio/drone_rythm_1.ogg" },
+	[WAV_DRONE_RY2] = { SOUND_OGG, .file = "res/audio/drone_rythm_2.ogg" },
+	[WAV_DRONE_RY3] = { SOUND_OGG, .file = "res/audio/drone_rythm_3.ogg" },
 };
 
 struct mesh empty_mesh = { 0 };

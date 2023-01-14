@@ -1,35 +1,6 @@
+#include <stdio.h>
 #include "sound.h"
-
-struct lrcv {
-	float l;
-	float r;
-	float c;
-	float v;
-};
-
-static struct lrcv
-sound_get_panning(struct sound *s, struct listener *li)
-{
-	vec3 sound_pos = s->pos;
-	vec3 player_pos = li->pos;
-	vec3 player_dir = li->dir;
-	vec3 player_left = li->left;
-	vec3 v = vec3_normalize(vec3_sub(sound_pos, player_pos));
-	float sin = vec3_dot(player_left, v);
-	float cos = vec3_dot(player_dir, v);
-	float l = MAX(0, sin);
-	float r = ABS(MIN(0, sin));
-	float c = ABS(cos);
-
-	float d = vec3_norm(vec3_sub(player_pos, sound_pos));
-	float vol = 1 / (d);
-	return (struct lrcv) {
-		.l = l,
-		.r = r,
-		.c = c,
-		.v = vol
-	};
-}
+#include "hrtf.h"
 
 void
 sound_init(struct sound *s, struct wav *wav, int mode, int trig,
@@ -46,30 +17,57 @@ sound_is_positional(struct sound *s)
 	return s->is_positional;
 }
 
-struct frame
-sound_pos_step(struct sound *s, struct listener *lis)
+static void
+sound_get_azim_elev(struct sound *s, struct camera *c, float *az, float *el, float *d)
 {
-	struct frame out;
-	struct lrcv lrcv;
-	lrcv = sound_get_panning(s, lis);
-	out = sound_step(s);
-	out.l = ((out.l * lrcv.l + out.l *lrcv.c)*lrcv.v);
-	out.r = ((out.r * lrcv.r + out.r *lrcv.c)*lrcv.v);
-	return out;
+	vec3 v;
+	quaternion q;
+	v = vec3_sub((c->position),(s->pos));
+	q = c->rotation;
+	quaternion r = { v, 0 };
+	quaternion qc = quaternion_conjugate(q);
+	r = quaternion_mult(quaternion_mult(qc, r), q);
+	*az = atan2(r.v.x, -r.v.z);
+	*el = asin(r.v.y/sqrt(POW2(r.v.x) + POW2(r.v.y) + POW2(r.v.z)));
+	*d = vec3_norm(v);
 }
 
-struct frame
-sound_step(struct sound *s)
+int
+sound_update_hrtf(struct sound *s, struct camera *c)
 {
-	struct frame out;
-	sample l, r;
-	l = step_sampler(&s->sampler);
-	if (s->sampler.wav->header.channels == 1) {
-		r = l;
-	} else {
-		r = step_sampler(&s->sampler);
-	}
-	out.l = l;
-	out.r = r;
-	return out;
+	int sts;
+	float az, el, d;
+	int a, e;
+	sound_get_azim_elev(s, c, &az, &el, &d);
+	s->vol = 1. / d;
+	a = RAD2DEG(az);
+	e = RAD2DEG(el);
+	sts = hrtf_get_taps(&a, &e, s->ltaps, s->rtaps);
+	return sts;
+}
+
+int
+sound_step(struct sound *s, struct frame *out)
+{
+	int ret;
+	ret = sampler_step(&s->sampler, 0, NULL, NULL, 0, out);
+	return ret;
+}
+
+int
+sound_pos_step(struct sound *s, struct frame *out)
+{
+	int ret;
+	s->sampler.vol = s->vol;
+	ret = sampler_step(&s->sampler, 1, s->ltaps, s->rtaps, HRTF_48_TAPS, out);
+	return ret;
+}
+
+int
+sound_get_frame(struct sound *s, struct frame *out)
+{
+	if (sound_is_positional(s))
+		return sound_pos_step(s, out);
+	else
+		return sound_step(s, out);
 }

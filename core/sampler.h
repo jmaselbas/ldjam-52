@@ -1,6 +1,7 @@
 #pragma once
 
 #include "audio.h"
+#include <stdint.h>
 
 #define STOP 0
 #define PLAY 1
@@ -21,4 +22,4 @@ struct sampler {
 };
 
 void sampler_init(struct sampler *s, struct wav *wav, int loop, int trig);
-sample step_sampler(struct sampler *s);
+int sampler_step(struct sampler *s, int convolve, int16_t *firl, int16_t *firr, int fir_size, struct frame *out);

@@ -36,13 +36,23 @@ is_retrigged(struct sampler *s)
 	return (s->trig);
 }
 
-sample
-step_sampler(struct sampler *s)
+static int
+nb_channels(struct sampler *s)
 {
-	int16_t *samples;
-	float vol;
-	size_t off;
-	sample ret = 0;
+	return (s->wav->header.channels);
+}
+
+static int
+is_stereo(struct sampler *s)
+{
+	return (nb_channels(s) == 2);
+}
+
+/* returns the position of the next frame of audio data */
+static size_t
+sampler_step_pos(struct sampler *s)
+{
+	size_t ret = 0;
 
 	if (is_retrigged(s)) {
 		s->trig = 0;
@@ -64,17 +74,57 @@ step_sampler(struct sampler *s)
 			s->cur = s->beg;
 		}
 	}
+	ret = s->cur;
+	s->cur++;
+	if (is_stereo(s))
+		s->cur++;
+	return ret;
+}
 
+int
+sampler_step(struct sampler *s, int convolve, int16_t *firl, int16_t *firr, int fir_size, struct frame *out)
+{
+	size_t pos;
+	float vol;
+	int16_t *samples;
+	int i, j;
+	int16_t no_convolution;
+	int16_t inc;
+
+	if (!out)
+		return 1;
+
+	no_convolution = INT16_MAX;
+	if (!convolve) {
+		firl = &no_convolution;
+		firr = &no_convolution;
+		fir_size = 1;
+	} else {
+		if (!firl || !firr)
+			return 1;
+	}
+
+	inc = is_stereo(s);
+	pos = sampler_step_pos(s);
+
+	out->l = 0;
+	out->r = 0;
 	switch(s->state){
 	case STOP:
-		ret = 0;
 		break;
 	case PLAY:
-		off = s->cur++;
 		vol = s->vol;
 		samples = (int16_t *) s->wav->audio_data;
-		ret = vol * (float) (samples[off] / (float) INT16_MAX);
+		for (i = 0; i < fir_size; i++) {
+			j = pos - (i * (inc + 1));
+			if (j >= 0) {
+				out->l += (float) firl[i]/INT16_MAX * (float) samples[j]/INT16_MAX;
+				out->r += (float) firr[i]/INT16_MAX * (float) samples[j + inc]/INT16_MAX;
+			}
+		}
+		out->l *= vol;
+		out->r *= vol;
 		break;
 	}
-	return ret;
+	return 0;
 }

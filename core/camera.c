@@ -184,3 +184,18 @@ camera_update_proj(struct camera *c)
 	c->proj.m[3][2] = -(2.0 * c->zFar * c->zNear) / (c->zFar - c->zNear);
 	c->proj.m[3][3] = 0;
 }
+
+struct camera
+camera_lerp(struct camera a, struct camera b, float x)
+{
+	struct camera r = {};
+	vec3 rpos, rdir, rup;
+
+	rpos = vec3_lerp(a.position, b.position, x);
+	rdir = vec3_lerp(camera_get_dir(&a), camera_get_dir(&b), x);
+	rup = vec3_lerp(camera_get_up(&a), camera_get_up(&b), x);
+	camera_look_at(&r, rdir, rup);
+	r.position = rpos;
+
+	return r;
+}

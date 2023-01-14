@@ -22,12 +22,19 @@ enum asset_key {
 
 	WAV_THEME,
 	WAV_CLICK,
+	WAV_DRONE_BASS,
+	WAV_DRONE_BELL,
+	WAV_DRONE_HI1,
+	WAV_DRONE_HI2,
+	WAV_DRONE_LAR,
+	WAV_DRONE_RY1,
+	WAV_DRONE_RY2,
+	WAV_DRONE_RY3,
 	ASSET_KEY_COUNT,
 	/* internal assets id starts here, they are not handled as regular
 	 * assets and should not be passed to game_get_*() */
 	INTERNAL_TEXTURE,
 };
-
 enum asset_state {
 	STATE_UNLOAD,
 	STATE_LOADED,

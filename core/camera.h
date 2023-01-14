@@ -26,4 +26,4 @@ void camera_apply(struct camera *c, quaternion q);
 void camera_rotate(struct camera *c, vec3 axis, float angle);
 
 void camera_look_at(struct camera *c, vec3 look_at, vec3 up);
-
+struct camera camera_lerp(struct camera a, struct camera b, float x);
