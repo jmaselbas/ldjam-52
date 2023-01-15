@@ -2,7 +2,7 @@
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
-#define ABS(a) ((a) > 0 ? (a) : (-1.) * (a))
+#define ABS(a) ((a) > 0 ? (a) : -(a))
 #define ARRAY_LEN(a) (sizeof(a) / sizeof((a)[0]))
 
 void warn(const char *fmt, ...);
