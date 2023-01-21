@@ -795,7 +795,6 @@ do_audio(struct audio *a)
 	float vol, nvol = g_state->options.audio_mute ? 0.0 :
 		g_state->options.main_volume;
 	struct sound *s;
-	struct camera lis;
 	struct camera cur;
 	struct camera nxt;
 	int sts;
@@ -808,22 +807,20 @@ do_audio(struct audio *a)
 	nxt = g_state->nxt_listener;
 	for (i=0; i < NB_SOUND; i++) {
 		s = &g_state->sound[i];
-		for (j = 0; j < a->size; j++) {
-			x  = (float) j / (float) a->size;
-			lis = camera_lerp(cur, nxt, x);
-			if (sound_is_positional(s)) {
-				sts = sound_update_hrtf(s, &lis);
-				if (sts != 0)
-					perror("couldn't find taps for sound");
-			}
-			sts = sound_get_frame(s, &f);
-			if (sts != 0)
-				perror("couldn't get sound frame");
-			vol = mix(lvol, nvol, x);
-			a->buffer[j].l += f.l;
-			a->buffer[j].r += f.r;
-		}
+		sts = 0;
+		if (sound_is_positional(s))
+			sts = sound_pos_buf_cur_nxt(s, &cur, &nxt, a->buffer, a->size);
+		if (sts != 0)
+			printf("couldn't compute audio buffer for sound %d", i);
 	}
+
+	for (i=0; i < a->size; i++) {
+		x = (float) i / (float) a->size;
+		vol = mix(lvol, nvol, x);
+		a->buffer[i].l *= vol;
+		a->buffer[i].r *= vol;
+	}
+
 	if (a->size > 0) {
 		g_state->cur_listener = nxt;
 		lvol = nvol;
@@ -881,7 +878,6 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	dbg_light_mark(&g_state->light);
 
 	sys_render_exec();
-	//set audio listening position
 	do_audio(audio);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);

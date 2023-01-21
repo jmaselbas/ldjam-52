@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "sound.h"
 #include "hrtf.h"
 
@@ -60,6 +61,34 @@ sound_pos_step(struct sound *s, struct frame *out)
 	int ret;
 	s->sampler.vol = s->vol;
 	ret = sampler_step(&s->sampler, 1, s->ltaps, s->rtaps, HRTF_48_TAPS, out);
+	return ret;
+}
+
+int
+sound_pos_buf_cur_nxt(struct sound *s, struct camera *cur, struct camera *nxt, struct frame *out, int size)
+{
+	int ret;
+	struct sound s2;
+	float x;
+	struct frame c, n, o;
+	memcpy(&s2, s, sizeof(struct sound));
+	sound_update_hrtf(s, cur);
+	sound_update_hrtf(&s2, nxt);
+	for (int i = 0; i < size; i++) {
+		x = (float) i / (float) size;
+		ret = sound_pos_step(s, &c);
+		if (ret != 0)
+			return ret;
+		ret = sound_pos_step(&s2, &n);
+		if (ret != 0)
+			return ret;
+		o.l = c.l * (1.0 - x) + x * n.l;
+		o.r = c.r * (1.0 - x) + x * n.r;
+		out[i].l += o.l;
+		out[i].r += o.r;
+
+	}
+	ret = 0;
 	return ret;
 }
 
