@@ -9,10 +9,10 @@ struct mesh {
 	GLuint vao;
 	GLuint vbo[MESH_MAX_VBO];
 	int vbo_count;
-	int idx_positions;
-	int idx_normals;
-	int idx_texcoords;
-	int idx_indices;
+	unsigned char idx_positions;
+	unsigned char idx_normals;
+	unsigned char idx_texcoords;
+	unsigned char idx_indices;
 	size_t vertex_count;
 	size_t index_count;
 	GLenum primitive;
