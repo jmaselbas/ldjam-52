@@ -412,9 +412,8 @@ float mat3_det(mat3 *m);
 */
 mat3 mat3_invert(mat3 *m);
 
-
 /* mat4 */
-void print_mat4(mat4 *m);
+void print_mat4(const mat4 *m);
 mat4 mat4_id(void);
 
 /* mat4_transform
@@ -423,18 +422,17 @@ mat4 mat4_id(void);
 */
 mat4 mat4_transform(vec3 position, quaternion rotation);
 mat4 mat4_transform_scale(vec3 position, quaternion rotation, vec3 scale);
-mat4 mat4_mult(mat4 *m, float s);
-vec4 mat4_mult_vec4(mat4 *m, vec4 v);
-vec3 mat4_mult_vec3(mat4 *m, vec3 v);
-mat4 mat4_mult_mat4(mat4 *a, mat4 *b);
+mat4 mat4_mult(const mat4 *m, float s);
+vec4 mat4_mult_vec4(const mat4 *m, vec4 v);
+vec3 mat4_mult_vec3(const mat4 *m, vec3 v);
+mat4 mat4_mult_mat4(const mat4 *a, const mat4 *b);
 
 /* mat4_projection_frustum
    Specification: Takes a projection matrix and return the frustum planes.
    Semantic: extract from a projection matrix 6 planes corresponsing
    to the projection frustum.
  */
-void mat4_projection_frustum(mat4 *mv, vec4 planes[6]);
-
+void mat4_projection_frustum(const mat4 *mv, vec4 planes[6]);
 
 /* plane_signed_distance
    Specification: Takes a halfspace plane and a point and return the
@@ -447,7 +445,7 @@ float plane_signed_distance(vec4 plane, vec3 point);
    return 1 if the sphere is outside of the frustum, ie the sphere is not
     visible from the camera frustum.
  */
-int sphere_outside_frustum(vec4 planes[6], vec3 center, float radius);
+int sphere_outside_frustum(const vec4 planes[6], vec3 center, float radius);
 
 /* Quaternions and Rotations */
 

@@ -140,7 +140,8 @@ mat3 invert3m(mat3 *m)
 	return 0;
 }
 #endif
-void print_mat4(mat4 *m)
+
+void print_mat4(const mat4 *m)
 {
 	printf(
 		"{"  VAL SEP VAL SEP VAL SEP VAL "\n"
@@ -156,15 +157,11 @@ void print_mat4(mat4 *m)
 
 mat4 mat4_id(void)
 {
-	mat4 r = {{
-		{1, 0, 0, 0},
-		{0, 1, 0, 0},
-		{0, 0, 1, 0},
-		{0, 0, 0, 1}}};
-	return r;
+	return MAT4_IDENTITY;
 }
 
-static void mat4_mult_local(mat4 *m, float s) {
+static void mat4_mult_local(mat4 *m, float s)
+{
 	m->m[0][0] *= s;
 	m->m[0][1] *= s;
 	m->m[0][2] *= s;
@@ -183,7 +180,7 @@ static void mat4_mult_local(mat4 *m, float s) {
 	m->m[3][3] *= s;
 }
 
-mat4 mat4_mult(mat4 *m, float s)
+mat4 mat4_mult(const mat4 *m, float s)
 {
 	mat4 r = *m;
 
@@ -192,7 +189,7 @@ mat4 mat4_mult(mat4 *m, float s)
 	return r;
 }
 
-vec4 mat4_mult_vec4(mat4 *m, vec4 v)
+vec4 mat4_mult_vec4(const mat4 *m, vec4 v)
 {
 	vec4 r;
 
@@ -204,7 +201,7 @@ vec4 mat4_mult_vec4(mat4 *m, vec4 v)
 	return r;
 }
 
-vec3 mat4_mult_vec3(mat4 *m, vec3 v)
+vec3 mat4_mult_vec3(const mat4 *m, vec3 v)
 {
 	vec3 r;
 
@@ -215,7 +212,7 @@ vec3 mat4_mult_vec3(mat4 *m, vec3 v)
 	return r;
 }
 
-mat4 mat4_mult_mat4(mat4 *a, mat4 *b)
+mat4 mat4_mult_mat4(const mat4 *a, const mat4 *b)
 {
 	mat4 r;
 	/* short notation for matrix access:
@@ -244,7 +241,7 @@ mat4 mat4_mult_mat4(mat4 *a, mat4 *b)
 }
 
 static vec4
-plane_normalize(vec4 *plane)
+plane_normalize(const vec4 *plane)
 {
 	vec4 r;
 	vec3 normal = { plane->x, plane->y, plane->z };
@@ -259,7 +256,7 @@ plane_normalize(vec4 *plane)
 }
 
 void
-mat4_projection_frustum(mat4 *m, vec4 planes[6])
+mat4_projection_frustum(const mat4 *m, vec4 planes[6])
 {
 	/* The elements of the 4x4 matrix are stored in column-major order */
 	vec4 col1 = { m->m[0][0], m->m[1][0], m->m[2][0], m->m[3][0] };
@@ -302,7 +299,7 @@ plane_signed_distance(vec4 plane, vec3 point)
 }
 
 int
-sphere_outside_frustum(vec4 planes[6], vec3 center, float radius)
+sphere_outside_frustum(const vec4 planes[6], vec3 center, float radius)
 {
 	int i;
 
