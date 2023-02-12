@@ -70,7 +70,7 @@ mesh_buffer(struct mesh *m, int idx, size_t size, void *data, GLenum usage)
 }
 
 void
-mesh_load(struct mesh *m, size_t count, GLenum primitive, float *positions, float *normals, float *texcoords)
+mesh_load(struct mesh *m, size_t count, GLenum primitive, const float *positions, const float *normals, const float *texcoords)
 {
 	mesh_init_vbo(m, count, primitive, positions != NULL, normals != NULL, texcoords != NULL);
 
@@ -89,7 +89,7 @@ mesh_load(struct mesh *m, size_t count, GLenum primitive, float *positions, floa
 }
 
 void
-mesh_index(struct mesh *m, size_t index_count, unsigned int *indices)
+mesh_index(struct mesh *m, size_t index_count, const unsigned int *indices)
 {
 
 	if (!indices)

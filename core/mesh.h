@@ -51,8 +51,8 @@ struct mesh {
      coun, positions, normals can be initialized from a wavefront object
      using load_obj. (see asset.h).
 */
-void mesh_load(struct mesh *m, size_t count, GLenum primitive, float *positions, float *normals, float *texcoords);
-void mesh_index(struct mesh *m, size_t count, unsigned int *index);
+void mesh_load(struct mesh *m, size_t count, GLenum primitive, const float *positions, const float *normals, const float *texcoords);
+void mesh_index(struct mesh *m, size_t count, const unsigned int *index);
 void mesh_bind(struct mesh *m, GLint position, GLint normal, GLint texture);
 void mesh_free(struct mesh *m);
 void mesh_load_box(struct mesh *m, float x, float y, float z);
