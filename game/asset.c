@@ -29,6 +29,7 @@ enum res_type {
 	SHADER,
 	MESH_INTERNAL,
 	MESH_OBJ,
+	MESH_MSH,
 	SOUND_INTERNAL,
 	SOUND_WAV,
 	SOUND_OGG,
@@ -55,9 +56,9 @@ static struct res_entry resfiles[ASSET_KEY_COUNT] = {
 	[DEBUG_MESH_CYLINDER] = { MESH_INTERNAL, {} },
 	[DEBUG_MESH_CUBE] = { MESH_INTERNAL, {} },
 	[MESH_QUAD] = { MESH_INTERNAL, {} },
-	[MESH_FLOOR] = { MESH_OBJ, .file = "res/floor.obj" },
-	[MESH_ROCK_PILAR] = { MESH_OBJ, .file = "res/rock.obj" },
-	[MESH_ROCK_SMALL] = { MESH_OBJ, .file = "res/small.obj" },
+	[MESH_FLOOR] = { MESH_MSH, .file = "res/floor.msh" },
+	[MESH_ROCK_PILAR] = { MESH_MSH, .file = "res/rock.msh" },
+	[MESH_ROCK_SMALL] = { MESH_MSH, .file = "res/small.msh" },
 	[SHADER_TEST]  = { SHADER, .vert = "res/proj.vert", .frag = "res/test.frag", },
 	[SHADER_SOLID]  = { SHADER, .vert = "res/proj.vert", .frag = "res/solid.frag", },
 	[SHADER_GUI]  = { SHADER, .vert = "res/gui.vert", .frag = "res/gui.frag", },
@@ -114,6 +115,7 @@ static struct wav silent_wav = {
 static int res_file_changed(struct res_entry *res, time_t since);
 static void res_reload_shader(struct game_asset *game_asset, enum asset_key key);
 static void res_reload_mesh_obj(struct game_asset *game_asset, enum asset_key key);
+static void res_reload_mesh_msh(struct game_asset *game_asset, enum asset_key key);
 static void res_reload_wav(struct game_asset *game_asset, enum asset_key key);
 static void res_reload_ogg(struct game_asset *game_asset, enum asset_key key);
 static void res_reload_png(struct game_asset *game_asset, enum asset_key key);
@@ -166,6 +168,9 @@ asset_reload(struct game_asset *game_asset, enum asset_key key)
 		break;
 	case MESH_OBJ:
 		res_reload_mesh_obj(game_asset, key);
+		break;
+	case MESH_MSH:
+		res_reload_mesh_msh(game_asset, key);
 		break;
 	case SOUND_OGG:
 		res_reload_ogg(game_asset, key);
@@ -276,6 +281,49 @@ out:
 	game_asset->tmpzone = mem_state;
 }
 
+#define MSH_IMPLEMENTATION
+#include "msh.h"
+
+static void
+res_reload_mesh_msh(struct game_asset *game_asset, enum asset_key key)
+{
+	struct memory_zone mem_state = game_asset->tmpzone; /* save memory state */
+	struct res_entry *res = &resfiles[key];
+	struct mesh *mesh;
+	struct asset_file file;
+	struct msh msh;
+	const struct msh_buff *buff;
+	const float *positions;
+	const float *normals;
+	const float *texcoords;
+	size_t vcount;
+
+	file = res_load_file(&game_asset->tmpzone, res->file);
+	if (!file.data)
+		goto out;
+
+	if (msh_from_memory(file.size, file.data, &msh) < 0)
+		goto out;
+
+	buff = msh_buff_by_name(&msh, "positions");
+	if (!buff)
+		goto out;
+
+	vcount = buff->len / buff->vsize;
+	positions = msh_buff_data(&msh, msh_buff_by_name(&msh, "positions"));
+	normals   = msh_buff_data(&msh, msh_buff_by_name(&msh, "normals"));
+	texcoords = msh_buff_data(&msh, msh_buff_by_name(&msh, "texcoords"));
+
+	mesh = asset_push(game_asset, key, sizeof(struct mesh));
+	mesh_load(mesh, vcount, GL_TRIANGLES, positions, normals, texcoords);
+
+	asset_since(game_asset, key, file.time);
+	asset_state(game_asset, key, STATE_LOADED);
+out:
+	/* restore memory zone */
+	game_asset->tmpzone = mem_state;
+}
+
 static void
 res_reload_mesh_obj(struct game_asset *game_asset, enum asset_key key)
 {
@@ -294,7 +342,6 @@ res_reload_mesh_obj(struct game_asset *game_asset, enum asset_key key)
 		info = read_obj_info(&file);
 
 		fcount = info.face_count;
-		/* keep positions outside of scrap/tmp zone */
 		positions = mempush(&game_asset->tmpzone, fcount * 3 * 3 * sizeof(float));
 		normals   = mempush(&game_asset->tmpzone, fcount * 3 * 3 * sizeof(float));
 		texcoords = NULL;
@@ -306,7 +353,6 @@ res_reload_mesh_obj(struct game_asset *game_asset, enum asset_key key)
 		mesh = asset_push(game_asset, key, sizeof(struct mesh));
 		/* for now mesh are triangulates: no index list */
 		mesh_load(mesh, fcount * 3, GL_TRIANGLES, positions, normals, texcoords);
-		mesh->positions = positions;
 
 		asset_since(game_asset, key, file.time);
 		asset_state(game_asset, key, STATE_LOADED);
