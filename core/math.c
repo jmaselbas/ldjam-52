@@ -31,6 +31,15 @@ void print_vec4(vec4 v)
 	printf("{" VAL SEP VAL SEP VAL SEP VAL "}\n", v.x, v.y, v.z, v.w);
 }
 
+vec4 vec4_from_float(float x, float y, float z, float w) {
+	vec4 v = { x, y, z, w };
+	return v;
+}
+
+vec4 vec4_from_vec3(vec3 v) {
+	return vec4_from_float(v.x, v.y, v.z, 0.0);
+}
+
 vec4 vec4_neg(vec4 v);
 vec4 vec4_add(vec4 u, vec4 v);
 vec4 vec4_sub(vec4 u, vec4 v);
@@ -54,6 +63,40 @@ void print_mat3(mat3 m)
 mat3 mat3_id(void)
 {
 	return MAT3_IDENTITY;
+}
+
+static vec3
+mat3_col(const mat3 *m, const size_t i)
+{
+	vec3 v = { m->m[0][i], m->m[1][i], m->m[2][i] };
+	return v;
+}
+
+static vec3
+mat3_row(const mat3 *m, const size_t i)
+{
+	vec3 v = { m->m[i][0], m->m[i][1], m->m[i][2] };
+	return v;
+}
+
+static mat3
+mat3_from_rows(vec3 r0, vec3 r1, vec3 r2)
+{
+	mat3 m = {{{ r0.x, r0.y, r0.z },
+		   { r1.x, r1.y, r1.z },
+		   { r2.x, r2.y, r2.z },
+		}};
+	return m;
+}
+
+static mat3
+mat3_from_cols(vec3 c0, vec3 c1, vec3 c2)
+{
+	mat3 m = {{{ c0.x, c1.x, c2.x },
+		   { c0.y, c1.y, c2.y },
+		   { c0.z, c1.z, c2.z },
+		}};
+	return m;
 }
 
 mat3 mat3_mult(mat3 *m, float s)
@@ -189,15 +232,133 @@ mat4 mat4_mult(const mat4 *m, float s)
 	return r;
 }
 
+#ifdef MAT4_COLS_FIRST
+static vec4
+mat4_col(const mat4 *m, const size_t i)
+{
+	vec4 v = { m->m[0][i], m->m[1][i], m->m[2][i], m->m[3][i] };
+	return v;
+}
+
+static vec4
+mat4_row(const mat4 *m, const size_t i)
+{
+	vec4 v = { m->m[i][0], m->m[i][1], m->m[i][2], m->m[i][3] };
+	return v;
+}
+
+static mat4
+mat4_from_rows(vec4 r0, vec4 r1, vec4 r2, vec4 r3)
+{
+	mat4 m = {{{ r0.x, r0.y, r0.z, r0.w },
+		   { r1.x, r1.y, r1.z, r1.w },
+		   { r2.x, r2.y, r2.z, r2.w },
+		   { r3.x, r3.y, r3.z, r3.w },
+		}};
+	return m;
+}
+
+static mat4
+mat4_from_cols(vec4 c0, vec4 c1, vec4 c2, vec4 c3)
+{
+	mat4 m = {{{ c0.x, c1.x, c2.x, c3.x },
+		   { c0.y, c1.y, c2.y, c3.y },
+		   { c0.z, c1.z, c2.z, c3.z },
+		   { c0.w, c1.w, c2.w, c3.w },
+		}};
+	return m;
+}
+#else
+static vec4
+mat4_col(const mat4 *m, const size_t i)
+{
+	vec4 v = { m->m[i][0], m->m[i][1], m->m[i][2], m->m[i][3] };
+	return v;
+}
+
+static vec4
+mat4_row(const mat4 *m, const size_t i)
+{
+	vec4 v = { m->m[0][i], m->m[1][i], m->m[2][i], m->m[3][i] };
+	return v;
+}
+
+static mat4
+mat4_from_rows(vec4 v0, vec4 v1, vec4 v2, vec4 v3)
+{
+	mat4 m = {{{ v0.x, v1.x, v2.x, v3.x },
+		   { v0.y, v1.y, v2.y, v3.y },
+		   { v0.z, v1.z, v2.z, v3.z },
+		   { v0.w, v1.w, v2.w, v3.w },
+		}};
+	return m;
+}
+
+static mat4
+mat4_from_cols(vec4 v0, vec4 v1, vec4 v2, vec4 v3)
+{
+	mat4 m = {{{ v0.x, v0.y, v0.z, v0.w },
+		   { v1.x, v1.y, v1.z, v1.w },
+		   { v2.x, v2.y, v2.z, v2.w },
+		   { v3.x, v3.y, v3.z, v3.w },
+		}};
+	return m;
+}
+#endif
+
+mat4
+mat4_transpose(mat4 m)
+{
+	vec4 r0 = mat4_row(&m, 0);
+	vec4 r1 = mat4_row(&m, 1);
+	vec4 r2 = mat4_row(&m, 2);
+	vec4 r3 = mat4_row(&m, 3);
+
+	return mat4_from_cols(r0, r1, r2, r3);
+}
+
+static mat4
+mat4_from_mat3(mat3 m)
+{
+	vec4 r0 = vec4_from_vec3(mat3_row(&m, 0));
+	vec4 r1 = vec4_from_vec3(mat3_row(&m, 1));
+	vec4 r2 = vec4_from_vec3(mat3_row(&m, 2));
+	vec4 r3 = {0, 0, 0, 1};
+	return mat4_from_rows(r0, r1, r2, r3);
+}
+
+static mat3
+mat3_from_quaternion(quaternion q)
+{
+	float n = quaternion_sqnorm(q);
+	float s = (n > 0.0) ? 2.0 / n : 0;
+	float x = q.v.x;
+	float y = q.v.y;
+	float z = q.v.z;
+	float w = q.w;
+	float xs = x * s,  ys = y * s,  zs = z * s;
+	float wx = w * xs, wy = w * ys, wz = w * zs;
+	float xx = x * xs, xy = x * ys, xz = x * zs;
+	float yy = y * ys, yz = y * zs, zz = z * zs;
+	vec3 r0 = { 1.0 - (yy + zz), xy - wz, xz + wy };
+	vec3 r1 = { xy + wz, 1.0 - (xx + zz), yz - wx };
+	vec3 r2 = { xz - wy, yz + wx, 1.0 - (xx + yy) };
+	return mat3_from_rows(r0, r1, r2);
+}
+
+static mat4
+mat4_from_quaternion(quaternion q)
+{
+	return mat4_from_mat3(mat3_from_quaternion(q));
+}
+
 vec4 mat4_mult_vec4(const mat4 *m, vec4 v)
 {
 	vec4 r;
-
-	r.x = m->m[0][0] * v.x + m->m[1][0] * v.y + m->m[2][0] * v.z + m->m[3][0] * v.w;
-	r.y = m->m[0][1] * v.x + m->m[1][1] * v.y + m->m[2][1] * v.z + m->m[3][1] * v.w;
-	r.z = m->m[0][2] * v.x + m->m[1][2] * v.y + m->m[2][2] * v.z + m->m[3][2] * v.w;
-	r.w = m->m[0][3] * v.x + m->m[1][3] * v.y + m->m[2][3] * v.z + m->m[3][3] * v.w;
-
+	r.x = vec4_dot(mat4_row(m, 0), v);
+	r.y = vec4_dot(mat4_row(m, 1), v);
+	r.z = vec4_dot(mat4_row(m, 2), v);
+	r.w = vec4_dot(mat4_row(m, 3), v);
 	return r;
 }
 
@@ -214,30 +375,31 @@ vec3 mat4_mult_vec3(const mat4 *m, vec3 v)
 
 mat4 mat4_mult_mat4(const mat4 *a, const mat4 *b)
 {
-	mat4 r;
-	/* short notation for matrix access:
-	 * declare two pointers to an array of 4 floats */
-	const float (*const am)[4] = a->m;
-	const float (*const bm)[4] = b->m;
-
-	r.m[0][0] = am[0][0] * bm[0][0] + am[1][0] * bm[0][1] + am[2][0] * bm[0][2] + am[3][0] * bm[0][3];
-	r.m[0][1] = am[0][1] * bm[0][0] + am[1][1] * bm[0][1] + am[2][1] * bm[0][2] + am[3][1] * bm[0][3];
-	r.m[0][2] = am[0][2] * bm[0][0] + am[1][2] * bm[0][1] + am[2][2] * bm[0][2] + am[3][2] * bm[0][3];
-	r.m[0][3] = am[0][3] * bm[0][0] + am[1][3] * bm[0][1] + am[2][3] * bm[0][2] + am[3][3] * bm[0][3];
-	r.m[1][0] = am[0][0] * bm[1][0] + am[1][0] * bm[1][1] + am[2][0] * bm[1][2] + am[3][0] * bm[1][3];
-	r.m[1][1] = am[0][1] * bm[1][0] + am[1][1] * bm[1][1] + am[2][1] * bm[1][2] + am[3][1] * bm[1][3];
-	r.m[1][2] = am[0][2] * bm[1][0] + am[1][2] * bm[1][1] + am[2][2] * bm[1][2] + am[3][2] * bm[1][3];
-	r.m[1][3] = am[0][3] * bm[1][0] + am[1][3] * bm[1][1] + am[2][3] * bm[1][2] + am[3][3] * bm[1][3];
-	r.m[2][0] = am[0][0] * bm[2][0] + am[1][0] * bm[2][1] + am[2][0] * bm[2][2] + am[3][0] * bm[2][3];
-	r.m[2][1] = am[0][1] * bm[2][0] + am[1][1] * bm[2][1] + am[2][1] * bm[2][2] + am[3][1] * bm[2][3];
-	r.m[2][2] = am[0][2] * bm[2][0] + am[1][2] * bm[2][1] + am[2][2] * bm[2][2] + am[3][2] * bm[2][3];
-	r.m[2][3] = am[0][3] * bm[2][0] + am[1][3] * bm[2][1] + am[2][3] * bm[2][2] + am[3][3] * bm[2][3];
-	r.m[3][0] = am[0][0] * bm[3][0] + am[1][0] * bm[3][1] + am[2][0] * bm[3][2] + am[3][0] * bm[3][3];
-	r.m[3][1] = am[0][1] * bm[3][0] + am[1][1] * bm[3][1] + am[2][1] * bm[3][2] + am[3][1] * bm[3][3];
-	r.m[3][2] = am[0][2] * bm[3][0] + am[1][2] * bm[3][1] + am[2][2] * bm[3][2] + am[3][2] * bm[3][3];
-	r.m[3][3] = am[0][3] * bm[3][0] + am[1][3] * bm[3][1] + am[2][3] * bm[3][2] + am[3][3] * bm[3][3];
-
-	return r;
+	vec4 r0 = {
+		vec4_dot(mat4_row(a, 0), mat4_col(b, 0)),
+		vec4_dot(mat4_row(a, 0), mat4_col(b, 1)),
+		vec4_dot(mat4_row(a, 0), mat4_col(b, 2)),
+		vec4_dot(mat4_row(a, 0), mat4_col(b, 3)),
+	};
+	vec4 r1 = {
+		vec4_dot(mat4_row(a, 1), mat4_col(b, 0)),
+		vec4_dot(mat4_row(a, 1), mat4_col(b, 1)),
+		vec4_dot(mat4_row(a, 1), mat4_col(b, 2)),
+		vec4_dot(mat4_row(a, 1), mat4_col(b, 3)),
+	};
+	vec4 r2 = {
+		vec4_dot(mat4_row(a, 2), mat4_col(b, 0)),
+		vec4_dot(mat4_row(a, 2), mat4_col(b, 1)),
+		vec4_dot(mat4_row(a, 2), mat4_col(b, 2)),
+		vec4_dot(mat4_row(a, 2), mat4_col(b, 3)),
+	};
+	vec4 r3 = {
+		vec4_dot(mat4_row(a, 3), mat4_col(b, 0)),
+		vec4_dot(mat4_row(a, 3), mat4_col(b, 1)),
+		vec4_dot(mat4_row(a, 3), mat4_col(b, 2)),
+		vec4_dot(mat4_row(a, 3), mat4_col(b, 3)),
+	};
+	return mat4_from_rows(r0, r1, r2, r3);
 }
 
 static vec4
@@ -258,11 +420,10 @@ plane_normalize(const vec4 *plane)
 void
 mat4_projection_frustum(const mat4 *m, vec4 planes[6])
 {
-	/* The elements of the 4x4 matrix are stored in column-major order */
-	vec4 col1 = { m->m[0][0], m->m[1][0], m->m[2][0], m->m[3][0] };
-	vec4 col2 = { m->m[0][1], m->m[1][1], m->m[2][1], m->m[3][1] };
-	vec4 col3 = { m->m[0][2], m->m[1][2], m->m[2][2], m->m[3][2] };
-	vec4 col4 = { m->m[0][3], m->m[1][3], m->m[2][3], m->m[3][3] };
+	vec4 v0 = mat4_row(m, 0);
+	vec4 v1 = mat4_row(m, 1);
+	vec4 v2 = mat4_row(m, 2);
+	vec4 v3 = mat4_row(m, 3);
 
 	/* Gribb and Hartmann method: Fast Extraction of Viewing
 	 * Frustum Planes from the World-View-Projection Matrix
@@ -270,17 +431,17 @@ mat4_projection_frustum(const mat4 *m, vec4 planes[6])
 	 */
 
 	/* Left clipping plane */
-	planes[0] = vec4_add(col4, col1);
+	planes[0] = vec4_add(v3, v0);
 	/* Right clipping plane */
-	planes[1] = vec4_sub(col4, col1);
+	planes[1] = vec4_sub(v3, v0);
 	/* Bottom clipping plane */
-	planes[2] = vec4_add(col4, col2);
+	planes[2] = vec4_add(v3, v1);
 	/* Top clipping plane */
-	planes[3] = vec4_sub(col4, col2);
+	planes[3] = vec4_sub(v3, v1);
 	/* Near clipping plane */
-	planes[4] = vec4_add(col4, col3);
+	planes[4] = vec4_add(v3, v2);
 	/* Far clipping plane */
-	planes[5] = vec4_sub(col4, col3);
+	planes[5] = vec4_sub(v3, v2);
 
 	/* normalize planes */
 	planes[0] = plane_normalize(&planes[0]);
@@ -311,6 +472,7 @@ sphere_outside_frustum(const vec4 planes[6], vec3 center, float radius)
 	return 0;
 }
 
+#if 0
 void load_rot4(mat4 *d, vec3 axis, float angle) {
 	float s = sin(angle), c = cos(angle), v = 1 - c;
 	float xv, xs, yv, ys, zv, zs;
@@ -348,45 +510,29 @@ void load_rot4(mat4 *d, vec3 axis, float angle) {
 	d->m[3][2] = 0.0;
 	d->m[3][3] = 1.0;
 }
+#endif
 
-mat4 mat4_transform(vec3 position, quaternion rotation)
+mat4 mat4_transform(vec3 pos, quaternion rot)
 {
-	mat4 r;
+	mat4 r = mat4_from_quaternion(rot);
 
-	quaternion_to_mat4(&r, rotation);
+	vec4 c0 = mat4_col(&r, 0);
+	vec4 c1 = mat4_col(&r, 1);
+	vec4 c2 = mat4_col(&r, 2);
+	vec4 c3 = { pos.x, pos.y, pos.z, 1.0 };
 
-	r.m[3][0] = position.x;
-	r.m[3][1] = position.y;
-	r.m[3][2] = position.z;
-	r.m[3][3] = 1;
-
-	return r;
+	return mat4_from_cols(c0, c1, c2, c3);
 }
 
-mat4 mat4_transform_scale(vec3 position, quaternion rotation, vec3 scale)
+mat4 mat4_transform_scale(vec3 pos, quaternion rot, vec3 scale)
 {
-	mat4 r;
+	mat4 r = mat4_from_quaternion(rot);
+	vec4 c0 = vec4_mult(scale.x, mat4_col(&r, 0));
+	vec4 c1 = vec4_mult(scale.y, mat4_col(&r, 1));
+	vec4 c2 = vec4_mult(scale.z, mat4_col(&r, 2));
+	vec4 c3 = { pos.x, pos.y, pos.z, 1.0 };
 
-	quaternion_to_mat4(&r, rotation);
-
-	r.m[0][0] *= scale.x;
-	r.m[0][1] *= scale.x;
-	r.m[0][2] *= scale.x;
-
-	r.m[1][0] *= scale.y;
-	r.m[1][1] *= scale.y;
-	r.m[1][2] *= scale.y;
-
-	r.m[2][0] *= scale.z;
-	r.m[2][1] *= scale.z;
-	r.m[2][2] *= scale.z;
-
-	r.m[3][0] = position.x;
-	r.m[3][1] = position.y;
-	r.m[3][2] = position.z;
-	r.m[3][3] = 1;
-
-	return r;
+	return mat4_from_cols(c0, c1, c2, c3);
 }
 
 quaternion quaternion_look_at(vec3 dir, vec3 up)
@@ -419,15 +565,7 @@ quaternion quaternion_look_at(vec3 dir, vec3 up)
 	  The transition matrix from B to B' is simply the matrix
 	  with column vectors ({s'},{u'},{f'}).
 	*/
-	rot.m[0][0] = s.x;
-	rot.m[1][0] = s.y;
-	rot.m[2][0] = s.z;
-	rot.m[0][1] = u.x;
-	rot.m[1][1] = u.y;
-	rot.m[2][1] = u.z;
-	rot.m[0][2] = f.x;
-	rot.m[1][2] = f.y;
-	rot.m[2][2] = f.z;
+	rot = mat3_from_cols(s, u, f);
 
 	/*
 	  TODO
@@ -529,26 +667,7 @@ void quaternion_to_mat4(mat4 *d, quaternion q)
 }
 
 void quaternion_to_rot3(mat3 *d, quaternion q) {
-	float n = quaternion_sqnorm(q);
-	float s = (n > 0.0) ? 2.0 / n : 0;
-	float x = q.v.x;
-	float y = q.v.y;
-	float z = q.v.z;
-	float w = q.w;
-	float xs = x * s,  ys = y * s,  zs = z * s;
-	float wx = w * xs, wy = w * ys, wz = w * zs;
-	float xx = x * xs, xy = x * ys, xz = x * zs;
-	float yy = y * ys, yz = y * zs, zz = z * zs;
-
-	d->m[0][0] = 1.0 - (yy + zz);
-	d->m[0][1] = xy - wz;
-	d->m[0][2] = xz + wy;
-	d->m[1][0] = xy + wz;
-	d->m[1][1] = 1.0 - (xx + zz);
-	d->m[1][2] = yz - wx;
-	d->m[2][0] = xz - wy;
-	d->m[2][1] = yz + wx;
-	d->m[2][2] = 1.0 - (xx + yy);
+	*d = mat3_from_quaternion(q);
 }
 
 quaternion quaternion_from_rot3(mat3 *m)

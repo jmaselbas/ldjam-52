@@ -426,6 +426,7 @@ mat4 mat4_mult(const mat4 *m, float s);
 vec4 mat4_mult_vec4(const mat4 *m, vec4 v);
 vec3 mat4_mult_vec3(const mat4 *m, vec3 v);
 mat4 mat4_mult_mat4(const mat4 *a, const mat4 *b);
+mat4 mat4_transpose(mat4 m);
 
 /* mat4_projection_frustum
    Specification: Takes a projection matrix and return the frustum planes.
@@ -478,7 +479,7 @@ vec3 quaternion_rotate(quaternion q, vec3 v);
    the matrix representing the rotation of angle alpaha around v.
    Example:
 */
-void load_rot4(mat4 *d, vec3 axis, float angle);
+// void load_rot4(mat4 *d, vec3 axis, float angle);
 
 /* quaternion_from_rot3
    Specification:
