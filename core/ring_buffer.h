@@ -110,7 +110,7 @@ ring_buffer_read_done(struct ring_buffer *rbuf, size_t nmemb)
 {
 	size_t n = rbuf->nmem;
 	size_t t = rbuf->tail;
-
+	__sync_synchronize();
 	rbuf->tail = (t + nmemb) % (2 * n);
 }
 
@@ -119,7 +119,7 @@ ring_buffer_write_done(struct ring_buffer *rbuf, size_t nmemb)
 {
 	size_t n = rbuf->nmem;
 	size_t h = rbuf->head;
-
+	__sync_synchronize();
 	rbuf->head = (h + nmemb) % (2 * n);
 }
 
