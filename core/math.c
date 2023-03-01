@@ -160,6 +160,45 @@ float mat3_det(mat3 *m)
 
 	return d;
 }
+
+mat3 mat3_look_at(vec3 dir, vec3 up)
+{
+	vec3 s, u, f;
+
+	/*
+	  We want to rotate the camera from it's initial orientation
+	  determined by the orthonormal familly of vectors
+	  B = (s,u,f) = ({1,0,0}, {0,1,0}, {0,0,1}) to a new
+	  a orientation (s',u',f') such that:
+	  - f' = normalize(dir)
+	  - u' must be in the plane (up,dir) and orthogonal to f'.
+	  - s' must be orthogonal to (up,dir).
+	*/
+
+	/*
+	  Compute the new orthonormal family of vectors
+	  B' = (s',u',f')
+	*/
+#if 0
+	f = vec3_normalize(f);
+	u = vec3_normalize(u);
+	s = vec3_cross(f, u);
+	s = vec3_normalize(s);
+#else
+	f = vec3_normalize(dir);
+	s = vec3_cross(up, f);
+	s = vec3_normalize(s);
+	u = vec3_cross(f, s);
+	u = vec3_normalize(u);
+#endif
+
+	/*
+	  The transition matrix from B to B' is simply the matrix
+	  with column vectors ({s'},{u'},{f'}).
+	*/
+	return mat3_from_cols(s, u, f);
+}
+
 #if 0
 mat3 invert3m(mat3 *m)
 {
@@ -541,35 +580,7 @@ mat4 mat4_transform_scale(vec3 pos, quaternion rot, vec3 scale)
 
 quaternion quaternion_look_at(vec3 dir, vec3 up)
 {
-	vec3 s, u, f;
-	mat3 rot;
-
-	/*
-	  We want to rotate the camera from it's initial orientation
-	  determined by the orthonormal familly of vectors
-	  B = (s,u,f) = ({1,0,0}, {0,1,0}, {0,0,1}) to a new
-	  a orientation (s',u',f') such that:
-	  - f' = normalize(dir)
-	  - u' must be in the plane (up,dir) and orthogonal to f'.
-	  - s' must be orthogonal to (up,dir).
-	*/
-
-	/*
-	  Compute the new orthonormal family of vectors
-	  B' = (s',u',f')
-	*/
-
-	f = vec3_normalize(dir);
-	s = vec3_cross(up, f);
-	s = vec3_normalize(s);
-	u = vec3_cross(f, s);
-	u = vec3_normalize(u);
-
-	/*
-	  The transition matrix from B to B' is simply the matrix
-	  with column vectors ({s'},{u'},{f'}).
-	*/
-	rot = mat3_from_cols(s, u, f);
+	mat3 rot = mat3_look_at(dir, up);
 
 	/*
 	  TODO
@@ -651,10 +662,11 @@ vec3 quaternion_rotate(quaternion q, vec3 v)
 
 void quaternion_to_mat4(mat4 *d, quaternion q)
 {
-	mat3 m;
-
-	quaternion_to_rot3(&m, q);
-
+#if 1
+	*d = mat4_from_quaternion(q);
+#else
+	mat3 m = mat3_from_quaternion(q);
+//	quaternion_to_rot3(&m, q);
 	d->m[0][0] = m.m[0][0];
 	d->m[0][1] = m.m[1][0];
 	d->m[0][2] = m.m[2][0];
@@ -668,6 +680,7 @@ void quaternion_to_mat4(mat4 *d, quaternion q)
 	d->m[2][2] = m.m[2][2];
 	d->m[2][3] = 0;
 	d->m[3][3] = 1;
+#endif
 }
 
 void quaternion_to_rot3(mat3 *d, quaternion q) {
