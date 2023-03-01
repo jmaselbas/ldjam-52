@@ -353,6 +353,10 @@ vec4_normalize(vec4 v)
 }
 
 /* mat3 operations */
+vec3 mat3_col(const mat3 *m, const size_t i);
+vec3 mat3_row(const mat3 *m, const size_t i);
+mat3 mat3_from_cols(vec3 c0, vec3 c1, vec3 c2);
+mat3 mat3_from_rows(vec3 r0, vec3 r1, vec3 r2);
 
 /* print_vec3
    Semantic: Take a mat3 m and print the matrix to the standard output
@@ -413,6 +417,12 @@ float mat3_det(mat3 *m);
 mat3 mat3_invert(mat3 *m);
 
 /* mat4 */
+
+vec4 mat4_col(const mat4 *m, const size_t i);
+vec4 mat4_row(const mat4 *m, const size_t i);
+mat4 mat4_from_rows(vec4 v0, vec4 v1, vec4 v2, vec4 v3);
+mat4 mat4_from_cols(vec4 v0, vec4 v1, vec4 v2, vec4 v3);
+
 void print_mat4(const mat4 *m);
 mat4 mat4_id(void);
 

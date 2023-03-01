@@ -65,21 +65,21 @@ mat3 mat3_id(void)
 	return MAT3_IDENTITY;
 }
 
-static vec3
+vec3
 mat3_col(const mat3 *m, const size_t i)
 {
 	vec3 v = { m->m[0][i], m->m[1][i], m->m[2][i] };
 	return v;
 }
 
-static vec3
+vec3
 mat3_row(const mat3 *m, const size_t i)
 {
 	vec3 v = { m->m[i][0], m->m[i][1], m->m[i][2] };
 	return v;
 }
 
-static mat3
+mat3
 mat3_from_rows(vec3 r0, vec3 r1, vec3 r2)
 {
 	mat3 m = {{{ r0.x, r0.y, r0.z },
@@ -89,7 +89,7 @@ mat3_from_rows(vec3 r0, vec3 r1, vec3 r2)
 	return m;
 }
 
-static mat3
+mat3
 mat3_from_cols(vec3 c0, vec3 c1, vec3 c2)
 {
 	mat3 m = {{{ c0.x, c1.x, c2.x },
@@ -129,19 +129,22 @@ vec3 mat3_mult_vec3(mat3 *m, vec3 v)
 
 mat3 mat3_mult_mat3(mat3 *a, mat3 *b)
 {
-	mat3 r;
-
-	r.m[0][0] = a->m[0][0] * b->m[0][0] + a->m[1][0] * b->m[0][1] + a->m[2][0] * b->m[0][2];
-	r.m[0][1] = a->m[0][1] * b->m[0][0] + a->m[1][1] * b->m[0][1] + a->m[2][1] * b->m[0][2];
-	r.m[0][2] = a->m[0][2] * b->m[0][0] + a->m[1][2] * b->m[0][1] + a->m[2][2] * b->m[0][2];
-	r.m[1][0] = a->m[0][0] * b->m[1][0] + a->m[1][0] * b->m[1][1] + a->m[2][0] * b->m[1][2];
-	r.m[1][1] = a->m[0][1] * b->m[1][0] + a->m[1][1] * b->m[1][1] + a->m[2][1] * b->m[1][2];
-	r.m[1][2] = a->m[0][2] * b->m[1][0] + a->m[1][2] * b->m[1][1] + a->m[2][2] * b->m[1][2];
-	r.m[2][0] = a->m[0][0] * b->m[2][0] + a->m[1][0] * b->m[2][1] + a->m[2][0] * b->m[2][2];
-	r.m[2][1] = a->m[0][1] * b->m[2][0] + a->m[1][1] * b->m[2][1] + a->m[2][1] * b->m[2][2];
-	r.m[2][2] = a->m[0][2] * b->m[2][0] + a->m[1][2] * b->m[2][1] + a->m[2][2] * b->m[2][2];
-
-	return r;
+	vec3 r0 = {
+		vec3_dot(mat3_row(a, 0), mat3_col(b, 0)),
+		vec3_dot(mat3_row(a, 0), mat3_col(b, 1)),
+		vec3_dot(mat3_row(a, 0), mat3_col(b, 2)),
+	};
+	vec3 r1 = {
+		vec3_dot(mat3_row(a, 1), mat3_col(b, 0)),
+		vec3_dot(mat3_row(a, 1), mat3_col(b, 1)),
+		vec3_dot(mat3_row(a, 1), mat3_col(b, 2)),
+	};
+	vec3 r2 = {
+		vec3_dot(mat3_row(a, 2), mat3_col(b, 0)),
+		vec3_dot(mat3_row(a, 2), mat3_col(b, 1)),
+		vec3_dot(mat3_row(a, 2), mat3_col(b, 2)),
+	};
+	return mat3_from_rows(r0, r1, r2);
 }
 
 float mat3_det(mat3 *m)
@@ -232,22 +235,23 @@ mat4 mat4_mult(const mat4 *m, float s)
 	return r;
 }
 
-#ifdef MAT4_COLS_FIRST
-static vec4
+//#define MAT4_ROW_MAJOR
+#ifdef MAT4_ROW_MAJOR
+vec4
 mat4_col(const mat4 *m, const size_t i)
 {
 	vec4 v = { m->m[0][i], m->m[1][i], m->m[2][i], m->m[3][i] };
 	return v;
 }
 
-static vec4
+vec4
 mat4_row(const mat4 *m, const size_t i)
 {
 	vec4 v = { m->m[i][0], m->m[i][1], m->m[i][2], m->m[i][3] };
 	return v;
 }
 
-static mat4
+mat4
 mat4_from_rows(vec4 r0, vec4 r1, vec4 r2, vec4 r3)
 {
 	mat4 m = {{{ r0.x, r0.y, r0.z, r0.w },
@@ -258,7 +262,7 @@ mat4_from_rows(vec4 r0, vec4 r1, vec4 r2, vec4 r3)
 	return m;
 }
 
-static mat4
+mat4
 mat4_from_cols(vec4 c0, vec4 c1, vec4 c2, vec4 c3)
 {
 	mat4 m = {{{ c0.x, c1.x, c2.x, c3.x },
@@ -269,21 +273,21 @@ mat4_from_cols(vec4 c0, vec4 c1, vec4 c2, vec4 c3)
 	return m;
 }
 #else
-static vec4
+vec4
 mat4_col(const mat4 *m, const size_t i)
 {
 	vec4 v = { m->m[i][0], m->m[i][1], m->m[i][2], m->m[i][3] };
 	return v;
 }
 
-static vec4
+vec4
 mat4_row(const mat4 *m, const size_t i)
 {
 	vec4 v = { m->m[0][i], m->m[1][i], m->m[2][i], m->m[3][i] };
 	return v;
 }
 
-static mat4
+mat4
 mat4_from_rows(vec4 v0, vec4 v1, vec4 v2, vec4 v3)
 {
 	mat4 m = {{{ v0.x, v1.x, v2.x, v3.x },
@@ -294,7 +298,7 @@ mat4_from_rows(vec4 v0, vec4 v1, vec4 v2, vec4 v3)
 	return m;
 }
 
-static mat4
+mat4
 mat4_from_cols(vec4 v0, vec4 v1, vec4 v2, vec4 v3)
 {
 	mat4 m = {{{ v0.x, v0.y, v0.z, v0.w },
