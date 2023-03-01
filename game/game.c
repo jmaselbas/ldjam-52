@@ -188,13 +188,13 @@ flycam_move(void)
 	else
 		speed = 2 * dt;
 
-	if (is_pressed('W'))
+	if (is_pressed('W') || is_pressed(KEY_UP))
 		fly_forw += 1;
-	if (is_pressed('S'))
+	if (is_pressed('S') || is_pressed(KEY_DOWN))
 		fly_forw -= 1;
-	if (is_pressed('A'))
+	if (is_pressed('A') || is_pressed(KEY_RIGHT))
 		fly_left += 1;
-	if (is_pressed('D'))
+	if (is_pressed('D') || is_pressed(KEY_LEFT))
 		fly_left -= 1;
 
 	if (fly_forw || fly_left) {
@@ -383,13 +383,13 @@ player_move(void)
 	vec3 dir, new;
 	float dx, dy;
 
-	if (is_pressed('W'))
+	if (is_pressed('W') || is_pressed(KEY_UP))
 		dir_forw += 1;
-	if (is_pressed('S'))
+	if (is_pressed('S') || is_pressed(KEY_DOWN))
 		dir_forw -= 1;
-	if (is_pressed('A'))
+	if (is_pressed('A') || is_pressed(KEY_LEFT))
 		dir_left += 1;
-	if (is_pressed('D'))
+	if (is_pressed('D') || is_pressed(KEY_RIGHT))
 		dir_left -= 1;
 	if (dir_forw || dir_left) {
 		forw = vec3_mult(dir_forw, forw);
