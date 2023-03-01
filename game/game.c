@@ -22,7 +22,7 @@ static inline uint64_t rotl(const uint64_t x, int k) {
 }
 
 static uint64_t s[4];
-uint64_t rand_seed(uint64_t seed) {
+void rand_seed(uint64_t seed) {
 	s[0] = s[1] = s[2] = s[3] = seed;
 }
 
@@ -50,8 +50,8 @@ void rand_jump(void) {
 	uint64_t s1 = 0;
 	uint64_t s2 = 0;
 	uint64_t s3 = 0;
-	for(int i = 0; i < sizeof JUMP / sizeof *JUMP; i++)
-		for(int b = 0; b < 64; b++) {
+	for (size_t i = 0; i < ARRAY_LEN(JUMP); i++)
+		for (int b = 0; b < 64; b++) {
 			if (JUMP[i] & UINT64_C(1) << b) {
 				s0 ^= s[0];
 				s1 ^= s[1];
