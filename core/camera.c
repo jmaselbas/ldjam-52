@@ -153,30 +153,22 @@ camera_update_view(struct camera *c)
 
 	u = camera_get_up(c);
 	f = camera_get_dir(c);
+
 	f = vec3_normalize(f);
 	u = vec3_normalize(u);
 	s = vec3_cross(f, u);
 	s = vec3_normalize(s);
 
-/*
-M = s0  s1  s2 0
-    u0  u1  u2 0
-   -f0 -f1 -f2 0
-    0    0   0 1
-*/
 	/* changement de repère worldview to eyeview */
 	x = -vec3_dot(s, c->position);
 	y = -vec3_dot(u, c->position);
-	z =  vec3_dot(f, c->position);
-	{
-		mat4 view = {{ /* tableau de vecteurs colonne */
-			{  s.x,  u.x, -f.x, 0 },
-			{  s.y,  u.y, -f.y, 0 },
-			{  s.z,  u.z, -f.z, 0 },
-			{    x,    y,    z, 1 }
-			}};
-		c->view = view;
-	}
+	z = -vec3_dot(f, c->position);
+	vec4 r0 = {  s.x,  u.x, -f.x, 0 };
+	vec4 r1 = {  s.y,  u.y, -f.y, 0 };
+	vec4 r2 = {  s.z,  u.z, -f.z, 0 };
+	vec4 r3 = {    x,    y,   -z, 1 };
+	/* transpose the matrix for the inverse rotation */
+	c->view = mat4_from_cols(r0, r1, r2, r3);
 }
 
 // https://github.com/g-truc/glm/blob/master/manual.md#section5_2
@@ -184,15 +176,40 @@ M = s0  s1  s2 0
 // https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/gluPerspective.xml
 
 static void
-camera_update_proj(struct camera *c)
+camera_update_proj(struct camera *cam)
 {
-	float tanHalfFov = tan(c->fov / 2.0);
+	float t = tan(cam->fov * 0.5);
+	float r = cam->ratio * t;
+	float f = cam->zFar;
+	float n = cam->zNear;
 
-	c->proj = (mat4){ 0 };
-	c->proj.m[0][0] = 1.0 / (c->ratio * tanHalfFov);
-	c->proj.m[1][1] = 1.0 / (tanHalfFov);
-	c->proj.m[2][2] = -(c->zFar + c->zNear) / (c->zFar - c->zNear);
-	c->proj.m[2][3] = -1.0;
-	c->proj.m[3][2] = -(2.0 * c->zFar * c->zNear) / (c->zFar - c->zNear);
-	c->proj.m[3][3] = 0;
+	float a = 1.0 / r;
+	float b = 1.0 / t;
+	float c = -(2.0 * f * n) / (f - n);
+	float d = -1.0;
+	float z = -(f + n) / (f - n);
+
+	vec4 v0 = {a, 0, 0, 0};
+	vec4 v1 = {0, b, 0, 0};
+	vec4 v2 = {0, 0, z, c};
+	vec4 v3 = {0, 0, d, 0};
+	cam->proj = mat4_from_rows(v0, v1, v2, v3);
+}
+
+void
+camera_update_orth(struct camera *cam, int width, int height)
+{
+	float f = 800.0;//c->zFar;
+	float n = 0.0; //c->zNear;
+
+	float a = 2.0 / width;
+	float b = 2.0 / height;
+	float c = -2.0 / (f - n);
+	float z = -(f + n) / (f - n);
+
+	vec4 v0 = {a, 0, 0, 0};
+	vec4 v1 = {0, b, 0, 0};
+	vec4 v2 = {0, 0, c, z};
+	vec4 v3 = {0, 0, 0, 1};
+	cam->proj = mat4_from_rows(v0, v1, v2, v3);
 }

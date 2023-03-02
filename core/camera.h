@@ -27,3 +27,4 @@ void camera_rotate(struct camera *c, vec3 axis, float angle);
 
 void camera_look_at(struct camera *c, vec3 look_at, vec3 up);
 
+void camera_update_orth(struct camera *c, int width, int height);

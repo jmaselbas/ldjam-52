@@ -315,22 +315,6 @@ sys_render_init(struct memory_zone zone)
 	}
 }
 
-static void
-camera_update_orth(struct camera *c, int width, int height)
-{
-	float r = 64.0;
-	float t = 64.0;
-	float f = 800.0;//c->zFar;
-	float n = 0.0; //c->zNear;
-
-	c->proj.m[0][0] = 1.0 / r;
-	c->proj.m[1][1] = 1.0 / t;
-	c->proj.m[2][2] = -2.0  / (f - n);
-	c->proj.m[2][3] = 0.0;
-	c->proj.m[3][2] = -(f + n) / (f - n);
-	c->proj.m[3][3] = 1.0;
-}
-
 void
 sys_render_exec(void)
 {
@@ -339,8 +323,7 @@ sys_render_exec(void)
 
 	glBindFramebuffer(GL_FRAMEBUFFER, g_state->depth_fbo);
 
-//	camera_init(&g_state->sun, 10.0, g_state->depth.width / g_state->depth.height);
-	camera_update_orth(&g_state->sun, g_state->depth.width, g_state->depth.height);
+	camera_update_orth(&g_state->sun, 64, 64);
 	camera_set(&g_state->sun, light->pos, light->rot);
 
 	/* clean depth buffer */
