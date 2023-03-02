@@ -1,7 +1,7 @@
 #include "engine.h"
 
 static struct bounding_volume
-bounding_volume(size_t count, float *positions)
+bounding_volume(size_t count, const float *positions)
 {
 	struct bounding_volume bvol = { 0 };
 	float len, max = 0;
@@ -63,7 +63,7 @@ mesh_init_vbo(struct mesh *m, size_t count, GLenum primitive, int positions, int
 }
 
 static void
-mesh_buffer(struct mesh *m, int idx, size_t size, void *data, GLenum usage)
+mesh_buffer(struct mesh *m, int idx, size_t size, const void *data, GLenum usage)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, m->vbo[idx]);
 	glBufferData(GL_ARRAY_BUFFER, m->vertex_count * size, data, usage);
