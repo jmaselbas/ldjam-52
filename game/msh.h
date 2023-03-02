@@ -42,7 +42,7 @@ struct msh {
 int msh_from_memory(unsigned int size, const void *data, struct msh *msh);
 const struct msh_buff *msh_buff_by_index(const struct msh *msh, unsigned int index);
 const struct msh_buff *msh_buff_by_name(const struct msh *msh, const char *name);
-const void *msh_buff_data(const struct msh *msh, struct msh_buff *buf);
+const void *msh_buff_data(const struct msh *msh, const struct msh_buff *buf);
 
 #ifdef MSH_WRITER
 void msh_create(struct msh *m);
@@ -88,7 +88,7 @@ msh_from_memory(unsigned int size, const void *data, struct msh *msh)
 }
 
 const void *
-msh_buff_data(const struct msh *msh, struct msh_buff *buf)
+msh_buff_data(const struct msh *msh, const struct msh_buff *buf)
 {
 	if (!buf)
 		return NULL;
