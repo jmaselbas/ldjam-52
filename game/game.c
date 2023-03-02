@@ -327,11 +327,10 @@ dist_to_triangle(vec3 q, vec3 a, vec3 b, vec3 c, float r)
 }
 
 static vec3
-player_walk(vec3 pos, vec3 new)
+player_walk(vec3 new)
 {
 	struct map *map = &g_state->map;
 	const float player_radius = 0.4;
-	const float S = 0.2;
 	float deep;
 	vec3 slv;
 	size_t it, i;
@@ -425,7 +424,7 @@ player_move(void)
 		camera_rotate(cam, left, a_dy);
 	}
 
-	new = player_walk(pos, new);
+	new = player_walk(new);
 	g_state->player_pos = new;
 }
 
@@ -719,6 +718,8 @@ game_main(void)
 		if (on_pressed(KEY_ESCAPE))
 			g_state->next_state = GAME_MENU;
 		break;
+	default:
+		break;
 	}
 	game_render();
 	if (g_state->state == g_state->next_state)
@@ -733,6 +734,8 @@ game_main(void)
 	case GAME_PLAY:
 		g_state->mouse_grabbed = 1;
 		io.show_cursor(!g_state->mouse_grabbed);
+		break;
+	default:
 		break;
 	}
 }
