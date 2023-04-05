@@ -192,9 +192,9 @@ flycam_move(void)
 		fly_forw += 1;
 	if (is_pressed('S') || is_pressed(KEY_DOWN))
 		fly_forw -= 1;
-	if (is_pressed('A') || is_pressed(KEY_RIGHT))
+	if (is_pressed('A') || is_pressed(KEY_LEFT))
 		fly_left += 1;
-	if (is_pressed('D') || is_pressed(KEY_LEFT))
+	if (is_pressed('D') || is_pressed(KEY_RIGHT))
 		fly_left -= 1;
 
 	if (fly_forw || fly_left) {
