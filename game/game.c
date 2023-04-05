@@ -839,6 +839,244 @@ do_audio(struct audio *a)
 	}
 }
 
+static float
+ccw(vec3 p1, vec3 p2, vec3 p3)
+{
+	return (p2.x - p1.x)*(p3.y - p1.y) - (p2.y - p1.y)*(p3.x - p1.x);
+}
+
+static vec3
+vec3_cross3(vec3 a, vec3 b, vec3 c)
+{
+	return vec3_cross(vec3_cross(a, b), c);
+}
+
+static vec3
+vec3_gjk_dir(vec3 a, vec3 b, vec3 c)
+{
+	/* ab x ao x ab */
+	/* oa x ab x ab */
+	/* ac x ab x ab */
+	/* ab x ac x ac */
+	/* ab x ac x ab */
+	vec3 ab = vec3_sub(b, a);
+	vec3 ac = vec3_sub(c, a);
+	return vec3_cross3(ac, ab, ab);
+}
+
+struct gjk_shape {
+	/* TODO: add type / supp function */
+	size_t n;
+	const vec3 *p;
+};
+
+static vec3
+supp_func(vec3 dir, size_t n, const vec3 *s)
+{
+	float d = vec3_dot(dir, s[0]);
+	size_t i, m = 0;
+	for (i = 1; i < n; i++) {
+		float n = vec3_dot(dir, s[i]);
+		if (n > d) {
+			d = n;
+			m = i;
+		}
+	}
+	return s[m];
+}
+
+static vec3
+gjk_supp_func(vec3 dir, struct gjk_shape s)
+{
+	return supp_func(dir, s.n, s.p);
+}
+
+static int
+gjk2_intersect(struct gjk_shape s1, struct gjk_shape s2, vec3 o1, vec3 o2)
+{
+	vec3 dir = vec3_sub(o1, o2);
+	vec3 a, b, c; /* our simplex */
+
+	/* P the minkosky sum the two points from each support function */
+	b = vec3_sub(vec3_add(supp_func(dir, s1.n, s1.p), o1),
+		     vec3_add(supp_func(vec3_neg(dir), s2.n, s2.p), o2));
+
+	/* the new direction D for the support function */
+	dir = vec3_neg(b);
+	a = vec3_sub(vec3_add(supp_func(dir, s1.n, s1.p), o1),
+		     vec3_add(supp_func(vec3_neg(dir), s2.n, s2.p), o2));
+
+	/* new point P "pass" the origin: if P dot D is positive */
+	if (vec3_dot(dir, a) < 0)
+		return 0;
+
+	dir = vec3_neg(vec3_gjk_dir(a, b, vec3(0,0,0)));
+	int dbg = 1;
+	if (dbg) {
+		dbg_cross(b, vec3(0.1,0.1,0.1), vec3(1,1,0.3));
+		dbg_cross(a, vec3(0.1,0.1,0.1), vec3(1,1,0.3));
+		dbg_line(a, b, vec3(0,1,1));
+		dbg_line(a, vec3_add(a, vec3_normalize(dir)), vec3(1,1,0));
+	}
+	while (1) {
+		c = b;
+		b = a;
+		a = vec3_sub(vec3_add(supp_func(dir, s1.n, s1.p), o1),
+		     vec3_add(supp_func(vec3_neg(dir), s2.n, s2.p), o2));
+		if (dbg) {
+			dbg_cross(c, vec3(0.1,0.1,0.1), vec3(1,1,0.3));
+			dbg_cross(b, vec3(0.1,0.1,0.1), vec3(1,1,0.3));
+			dbg_line(c, b, vec3(0,1,1));
+			dbg_cross(a, vec3(0.1,0.1,0.1), vec3_dot(dir, a) < 0 ? vec3(1,0,0) : vec3(0,1,0));
+
+			dbg_line(a, vec3_sub(a, vec3_normalize(dir)), vec3(1,0.5,0));
+
+			if (vec3_dot(dir, a) > 0) {
+				vec3 d;
+				d = vec3_gjk_dir(c, a, b);
+				dbg_line(a, vec3_add(a, vec3_normalize(d)), vec3(1,1,0));
+				dbg_line(c, a, vec3_dot(d, a) < 0 ? vec3(0,1,0) : vec3(1,0,0));
+
+				d = vec3_gjk_dir(b, a, c);
+				dbg_line(a, vec3_add(a, vec3_normalize(d)), vec3(1,1,0));
+				dbg_line(b, a, vec3_dot(d, a) < 0 ? vec3(0,1,0) : vec3(1,0,0));
+			}
+
+		}
+
+		if (vec3_dot(dir, a) < 0)
+			break; /* false */
+		/* found new direction, or detect intersection */
+		dir = vec3_gjk_dir(c, a, b);
+		if (vec3_dot(dir, a) < 0)
+			continue;
+		dir = vec3_gjk_dir(b, a, c);
+		if (vec3_dot(dir, a) < 0)
+			continue;
+		return 1;
+	}
+	return 0;
+}
+
+static void
+gjk_test(void)
+{
+	const vec3 red = vec3(1,0,0);
+	const vec3 blu = vec3(0,0,1);
+	const vec3 pur = vec3(1,0,1);
+	// two shapes
+	vec3 sA[] = {
+		vec3(-1.2,-0.5,0),
+		vec3(-1.0, 0.8,0),
+		vec3( 1.1, 1,0),
+		vec3( 1.5, -0.8,0),
+		vec3( 1.0, -1.5,0),
+	};
+	vec3 sB[] = {
+		vec3(1.2,0,0),
+		vec3(2.5,1,0),
+		vec3(1,1.5,0),
+	};
+	vec3 oA = vec3(1.5,2.0,0);
+//	vec3 oB = vec3(-5.0+g_input->xpos / 128.0, 2.5-g_input->ypos / 128.0,0);
+	static vec3 oB = vec3(-1, -1, 0);
+	vec3 iB = vec3(0,0,0);
+	int inp = 0;
+	if (is_pressed('W') || is_pressed(KEY_UP))
+		iB.y += 0.1, inp = 1;
+	if (is_pressed('S') || is_pressed(KEY_DOWN))
+		iB.y -= 0.1, inp = 1;
+	if (is_pressed('A') || is_pressed(KEY_LEFT))
+		iB.x -= 0.1, inp = 1;
+	if (is_pressed('D') || is_pressed(KEY_RIGHT))
+		iB.x += 0.1, inp = 1;
+
+	size_t i,j;
+
+	float x, y; /* grid */
+	dbg_cross(vec3(0,0,0), vec3(10,10,10), vec3(0.2,0.2,0.2));
+	for (x = -5; x < 6; x+=1) {
+		dbg_cross(vec3(x,0,0), vec3(10,10,0), vec3(0.2,0.2,0.2));
+		dbg_cross(vec3(0,x,0), vec3(10,10,0), vec3(0.2,0.2,0.2));
+		dbg_cross(vec3(x+0.5,0,0), vec3(10,10,0), vec3(0.1,0.1,0.1));
+		dbg_cross(vec3(0,x+0.5,0), vec3(10,10,0), vec3(0.1,0.1,0.1));
+	}
+
+	for (i = 0; i < ARRAY_LEN(sB); i++) {
+		vec3 p1 = vec3_add(sB[i], oB);
+		vec3 p2 = vec3_add(sB[(i+1) % ARRAY_LEN(sB)], oB);
+		dbg_cross(p1, vec3(0.2,0.2,0.2), red);
+		dbg_line(p1, p2, red);
+	}
+
+	for (i = 0; i < ARRAY_LEN(sA); i++) {
+		vec3 p1 = vec3_add(sA[i], oA);
+		vec3 p2 = vec3_add(sA[(i+1) % ARRAY_LEN(sA)], oA);
+		dbg_cross(p1, vec3(0.2,0.2,0.2), blu);
+		dbg_line(p1, p2, blu);
+	}
+
+	if (0)	{
+	vec3 sS[ARRAY_LEN(sA)*ARRAY_LEN(sB)];
+	for (i = 0; i < ARRAY_LEN(sA); i++) {
+		for (j = 0; j < ARRAY_LEN(sB); j++) {
+			vec3 pA = vec3_add(sA[i], oA);
+			vec3 pB = vec3_add(sB[j], oB);
+			vec3 p1 = vec3_sub(pA, pB);
+			sS[i*ARRAY_LEN(sB)+j] = p1;
+			dbg_cross(p1, vec3(0.1,0.1,0.1), vec3(0.3,0,0.3));
+			//dbg_line(pA, pB, vec3(0.3,0,0.3));
+			dbg_line(vec3(0,0,0), p1, vec3(0.3,0,0.3));
+		}
+	}
+
+		vec3 dir = vec3(1,0,0);
+	float m = vec3_dot(dir, sS[0]);
+	int im = 0;
+	for (i = 0; i < ARRAY_LEN(sS); i++) {
+		/* support function */
+		float d = vec3_dot(dir, sS[i]);
+		if (d > m) { m = d; im = i; }
+	}
+
+		int cnt = 0;
+		int p, q;
+		p = (im) % ARRAY_LEN(sS);
+		do {
+			q = (p + 1) % ARRAY_LEN(sS);
+			for (i = 0; i < ARRAY_LEN(sS); i++) {
+				if (i == q || i == p) continue;
+				if (ccw(sS[p], sS[q], sS[i]) < 0) {
+					/* counter-clock */
+					q = i;
+				}
+			}
+			dbg_line(sS[p], sS[q], pur);
+			p = q;
+			if (cnt++ > ARRAY_LEN(sS))
+				break;
+		} while (p != im);
+	}
+	{
+		struct gjk_shape s1 = { .n = ARRAY_LEN(sA), .p = sA };
+		struct gjk_shape s2 = { .n = ARRAY_LEN(sB), .p = sB };
+		vec3 n;
+		if (inp) {
+		for (int I = 0; I < 4; I++) {
+			vec3 n = vec3_add(oB, vec3_mult((I+1)/4.0, iB));
+			if (gjk2_intersect(s1, s2, oA, n)) {
+				n = oB;
+				gui_printf(250, 16, "collision %d", I);
+				break;
+			}
+		}
+		oB = n;
+		}
+	}
+
+	gui_printf(250, 0, "xpos %f ypos %f", g_input->xpos, g_input->ypos);
+}
+
 void
 game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 {
