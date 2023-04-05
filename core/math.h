@@ -34,6 +34,8 @@ typedef struct quaternion_t {
 	float w;
 } quaternion;
 
+#define vec3(x,y,z) ((vec3){(x), (y), (z)})
+
 #define VEC3_ZERO   ((vec3){0, 0, 0})
 #define VEC3_AXIS_X ((vec3){1, 0, 0})
 #define VEC3_AXIS_Y ((vec3){0, 1, 0})
