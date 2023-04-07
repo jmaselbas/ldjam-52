@@ -65,55 +65,25 @@ camera_set_ratio(struct camera *c, float ratio)
 vec3
 camera_get_left(struct camera *c)
 {
-#if 0
-	vec3 s;
-	mat3 rot;
-	quaternion_to_rot3(&rot, c->rotation);
-	s.x = rot.m[0][0];
-	s.y = rot.m[1][0];
-	s.z = rot.m[2][0];
-	return s;
-#else
 	mat3 rot;
 	quaternion_to_rot3(&rot, c->rotation);
 	return mat3_col(&rot, 0);
-#endif
 }
 
 vec3
 camera_get_up(struct camera *c)
 {
-#if 0
-	vec3 s;
-	mat3 rot;
-	quaternion_to_rot3(&rot, c->rotation);
-	s.x = rot.m[0][1];
-	s.y = rot.m[1][1];
-	s.z = rot.m[2][1];
-	return s;
-#else
 	mat3 rot;
 	quaternion_to_rot3(&rot, c->rotation);
 	return mat3_col(&rot, 1);
-#endif
 }
 
 vec3
 camera_get_dir(struct camera *c)
 {
-#if 0
-	vec3 s;
-	mat3 rot;
-	quaternion_to_rot3(&rot, c->rotation);
-	s.x = rot.m[0][2];
-	s.y = rot.m[1][2];
-	s.z = rot.m[2][2];
-	return s;
-#else
 	mat3 rot;
 	quaternion_to_rot3(&rot, c->rotation);
 	return mat3_col(&rot, 2);
-#endif
 }
 
 void
