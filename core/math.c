@@ -825,3 +825,43 @@ point_in_triangle(vec3 q, vec3 a, vec3 b, vec3 c)
 		&& vec3_dot(x2, n) >= 0
 		&& vec3_dot(x3, n) >= 0;
 }
+#if 0
+static float
+mat4_minor(const mat4 *m, const size_t r0, const size_t r1, const size_t r2, const size_t c0, const size_t c1, const size_t c2)
+{
+	float mi;
+	mi  = m->m[r0][c0] * (m->m[r1][c1] * m->m[r2][c2] - m->m[r2][c1] * m->m[r1][c2]);
+	mi -= m->m[r0][c1] * (m->m[r1][c0] * m->m[r2][c2] - m->m[r2][c0] * m->m[r1][c2]);
+	mi += m->m[r0][c2] * (m->m[r1][c0] * m->m[r2][c1] - m->m[r2][c0] * m->m[r1][c1]);
+	return mi;
+}
+
+mat4 mat4_adjoint(const mat4 *m)
+{
+	mat4 a = {{
+			{ mat4_minor(m, 1, 2, 3, 1, 2, 3), -mat4_minor(m, 0, 2, 3, 1, 2, 3), mat4_minor(m, 0, 1, 3, 1, 2, 3), -mat4_minor(m, 0, 1, 2, 1, 2, 3)},
+			{ -mat4_minor(m, 1, 2, 3, 0, 2, 3), mat4_minor(m, 0, 2, 3, 0, 2, 3), -mat4_minor(m, 0, 1, 3, 0, 2, 3), mat4_minor(m, 0, 1, 2, 0, 2, 3)},
+			{ mat4_minor(m, 1, 2, 3, 0, 1, 3), -mat4_minor(m, 0, 2, 3, 0, 1, 3), mat4_minor(m, 0, 1, 3, 0, 1, 3), -mat4_minor(m, 0, 1, 2, 0, 1, 3)},
+			{-mat4_minor(m, 1, 2, 3, 0, 1, 2), mat4_minor(m, 0, 2, 3, 0, 1, 2), -mat4_minor(m, 0, 1, 3, 0, 1, 2), mat4_minor(m, 0, 1, 2, 0, 1, 2)},
+		}};
+	return a;
+}
+
+float
+mat4_det(const mat4 *m)
+{
+	float d = 0.0;
+	d += m->m[0][0] * mat4_minor(m, 1, 2, 3, 1, 2, 3);
+	d -= m->m[0][1] * mat4_minor(m, 1, 2, 3, 0, 2, 3);
+	d += m->m[0][2] * mat4_minor(m, 1, 2, 3, 0, 1, 3);
+	d -= m->m[0][3] * mat4_minor(m, 1, 2, 3, 0, 1, 2);
+	return d;
+}
+
+mat4
+mat4_inverse(const mat4 *m)
+{
+	mat4 a = mat4_adjoint(m);
+	return mat4_mult(&a, (1.0f / mat4_det(m)));
+}
+#endif
