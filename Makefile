@@ -26,6 +26,7 @@ plt-src += main.c
 plt-obj = $(addprefix $(OUT),$(plt-src:.c=.o))
 plt-dynlib-y-obj = $(addprefix $(OUT),$(plt-dynlib-y-src:.c=.o))
 plt-dynlib-n-obj = $(addprefix $(OUT),$(plt-dynlib-n-src:.c=.o))
+tst-obj += $(OUT)test.o $(filter-out %main.o,$(obj) $(plt-obj) $(plt-dynlib-n-obj))
 BIN = haarvest$(EXT)
 LIB = $(LIBDIR)/libgame.so
 RES += res/proj.vert res/orth.vert res/texture.frag res/solid.frag res/test.frag res/ascii.png res/rock.obj res/small.obj res/gui.frag res/gui.vert res/sky.frag res/sky.vert res/floor.obj res/audio/ld52_theme48.ogg
@@ -35,7 +36,8 @@ all: dynlib static
 
 static: $(OUT)$(BIN);
 
-$(OUT)test: $(OUT)test.o
+$(OUT)test: $(tst-obj)
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LDLIBS)
 
 # dynlib build enable game code hot reloading
 dynlib: LDFLAGS += -ldl -rdynamic -Wl,-rpath,.
@@ -81,8 +83,9 @@ test.c: $(src) core/utest.h Makefile
 	@echo 'const struct utest tests[] = {' >> $@
 	@grep TEST\( $(src) | sed 's/.*TEST(\(.*\)).*/{"\1", test_\1},/' >> $@
 	@echo '};' >> $@
-	@echo "const size_t tests_count = sizeof(tests)/sizeof(*tests);" >> $@
-	@echo "int main(int argc,char**argv){return utest_main(argc,argv);}" >> $@
+	@echo 'const size_t tests_count = sizeof(tests)/sizeof(*tests);' >> $@
+	@echo '#include "plat/stub.c"' >> $@
+	@echo 'int main(int argc,char**argv){return utest_main(argc-1,argv+1);}' >> $@
 
 .PHONY: all static dynlib clean echo test
 
