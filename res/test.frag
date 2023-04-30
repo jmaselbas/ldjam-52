@@ -26,19 +26,17 @@ float shadowlookup(vec4 coord, vec2 uv)
 }
 #else
 uniform sampler2D shadowmap;
-float shadowlookup(vec4 coord, vec2 uv)
-{
-	vec2 off = uv / vec2(textureSize(shadowmap, 0));
-	float d = coord.z + 0.00001;
-	float s = texture(shadowmap, coord.xy + off).z;
-	return (s <= d) ? 0.0: 1.0;
-}
-#endif
 float shadow(void)
 {
-	float shadow = 0.0;
-	return shadowlookup(shadowpos, vec2(0));
+	vec3 p = 0.5 + 0.5 * (shadowpos.xyz / shadowpos.w);
+	vec2 r = 1./textureSize(shadowmap, 0);
+	float d;
+
+	d = texture(shadowmap, p.xy).r;
+	return p.z - (d - 0.000001);
 }
+#endif
+
 void main(void)
 {
 	const vec3 sky_color = vec3(0.324, 0.0420, 0.0178);
@@ -49,12 +47,11 @@ void main(void)
 	float fog = exp(-fog_density * z * z);
 
 	vec3 p = 0.5 + 0.5 * (shadowpos.xyz / shadowpos.w);
-	float dep = texture(shadowmap, p.xy).r;
-	bool inshadow = p.z > (dep - 0.000001) || inc > 0.0;
+	bool inshadow = shadow() > 0.0|| inc > 0.0;
 
 	col = mix(col, col+vec3(0.2,0.1,0.15)*0.5, 1.0- dot(normal, vec3(0,1,0)));
 	if (inshadow)
 		col *= 0.0;
-		col = mix(fog_color, col, clamp(fog, 0.0, 1.0));
+	col = mix(fog_color, col, clamp(fog, 0.0, 1.0));
 	out_color = vec4(col, 1);
 }

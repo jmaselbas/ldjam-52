@@ -1119,12 +1119,40 @@ game_step(struct game_memory *memory, struct input *input, struct audio *audio)
 	} else {
 		g_state->cam = g_state->player_cam;
 	}
-	vec3 pos = g_state->cam.position;
-	light_set_pos(&g_state->light, (vec3){-13.870439, 27.525631, -11.145432});
-	light_look_at(&g_state->light, VEC3_ZERO, VEC3_AXIS_Y);
-	pos = vec3_add(pos, vec3_mult(-50, light_get_dir(&g_state->light)));
-	light_set_pos(&g_state->light, pos);
-	dbg_light_mark(&g_state->light);
+
+	/* let's snap the sun position on the camera position */
+	/* 1. project camera position in sun-space */
+	/* 2. project sun position in sun-space ? -> nah, that's 0,0 */
+	/* 3. offset the sun position by the camera position */
+	/* 4. project back the offset of the camera to world space */
+	/* 5. apply offset to orignal sun position */
+	/* 6. update sun projection matrix */
+	struct light *light = &g_state->light;
+	vec3 pos = g_state->player_pos;
+	light_set_pos(light, (vec3){-13.870439, 27.525631, -11.145432});
+	light_look_at(light, VEC3_ZERO, VEC3_AXIS_Y);
+	camera_set(&g_state->sun, light->pos, light->rot);
+	camera_update_orth(&g_state->sun, 64, 64);
+
+	mat4 vm = mat4_mult_mat4(&g_state->sun.proj, &g_state->sun.view);
+	mat4 inv = mat4_inverse(&vm);
+
+	vec4 pp = {pos.x, pos.y, pos.z, 0.0};
+	pp = mat4_mult_vec4(&vm, pp);
+	float R = 1024; /* texture resolution */
+	pp.x = floor(pp.x*R)/R;
+	pp.y = floor(pp.y*R)/R;
+	pp.z = 0;
+	pp.w = 0;
+
+	pp = mat4_mult_vec4(&inv, pp);
+	pos.x = pp.x;
+	pos.y = pp.y;
+	pos.z = pp.z;
+
+	pos = vec3_add(light->pos, pos);
+	light_set_pos(light, pos);
+	dbg_light_mark(light);
 
 	sys_render_exec();
 	audio_set_listener(g_state->cam.position,
