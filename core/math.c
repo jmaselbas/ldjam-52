@@ -30,16 +30,6 @@ void print_vec4(vec4 v)
 {
 	printf("{" VAL SEP VAL SEP VAL SEP VAL "}\n", v.x, v.y, v.z, v.w);
 }
-
-vec4 vec4_from_float(float x, float y, float z, float w) {
-	vec4 v = { x, y, z, w };
-	return v;
-}
-
-vec4 vec4_from_vec3(vec3 v) {
-	return vec4_from_float(v.x, v.y, v.z, 0.0);
-}
-
 vec4 vec4_neg(vec4 v);
 vec4 vec4_add(vec4 u, vec4 v);
 vec4 vec4_sub(vec4 u, vec4 v);
@@ -825,7 +815,7 @@ point_in_triangle(vec3 q, vec3 a, vec3 b, vec3 c)
 		&& vec3_dot(x2, n) >= 0
 		&& vec3_dot(x3, n) >= 0;
 }
-#if 0
+
 static float
 mat4_minor(const mat4 *m, const size_t r0, const size_t r1, const size_t r2, const size_t c0, const size_t c1, const size_t c2)
 {
@@ -836,7 +826,8 @@ mat4_minor(const mat4 *m, const size_t r0, const size_t r1, const size_t r2, con
 	return mi;
 }
 
-mat4 mat4_adjoint(const mat4 *m)
+mat4
+mat4_adjoint(const mat4 *m)
 {
 	mat4 a = {{
 			{ mat4_minor(m, 1, 2, 3, 1, 2, 3), -mat4_minor(m, 0, 2, 3, 1, 2, 3), mat4_minor(m, 0, 1, 3, 1, 2, 3), -mat4_minor(m, 0, 1, 2, 1, 2, 3)},
@@ -851,6 +842,7 @@ float
 mat4_det(const mat4 *m)
 {
 	float d = 0.0;
+
 	d += m->m[0][0] * mat4_minor(m, 1, 2, 3, 1, 2, 3);
 	d -= m->m[0][1] * mat4_minor(m, 1, 2, 3, 0, 2, 3);
 	d += m->m[0][2] * mat4_minor(m, 1, 2, 3, 0, 1, 3);
@@ -858,10 +850,20 @@ mat4_det(const mat4 *m)
 	return d;
 }
 
+/*
+float mat4_sarrus(const mat *m, size_t o, p)
+{
+	float a, b, c, d;
+	a = mat4_col(m, (o+0)%4).x;
+	b = mat4_col(m, (o+1)%4).y;
+	c = mat4_col(m, (o+2)%4).z;
+	d = mat4_col(m, (o+3)%4).w;
+	}*/
+
 mat4
 mat4_inverse(const mat4 *m)
 {
 	mat4 a = mat4_adjoint(m);
 	return mat4_mult(&a, (1.0f / mat4_det(m)));
 }
-#endif
+

@@ -258,6 +258,17 @@ vec3_cross(vec3 u, vec3 v)
 */
 void print_vec4(vec4 v);
 
+static inline vec4
+vec4_from_float(float x, float y, float z, float w) {
+	vec4 v = { x, y, z, w };
+	return v;
+}
+
+static inline vec4
+vec4_from_vec3(vec3 v) {
+	return vec4_from_float(v.x, v.y, v.z, 0.0);
+}
+
 /* vec4_add
    Specification:
    Takes two vec4 u, v and return a vec4
@@ -439,6 +450,9 @@ vec4 mat4_mult_vec4(const mat4 *m, vec4 v);
 vec3 mat4_mult_vec3(const mat4 *m, vec3 v);
 mat4 mat4_mult_mat4(const mat4 *a, const mat4 *b);
 mat4 mat4_transpose(mat4 m);
+mat4 mat4_adjoint(const mat4 *m);
+float mat4_det(const mat4 *m);
+mat4 mat4_inverse(const mat4 *m);
 
 /* mat4_projection_frustum
    Specification: Takes a projection matrix and return the frustum planes.
